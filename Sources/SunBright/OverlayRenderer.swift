@@ -176,9 +176,9 @@ private final class DisplayOverlay {
 
     func render(requestedMultiplier: Double) throws -> Double {
         let potential = Double(screen.maximumPotentialExtendedDynamicRangeColorComponentValue)
-        guard triggerSurface.present(value: min(potential, 2)) else { throw RenderingError.surfaceUnavailable }
+        guard triggerSurface.present(value: min(potential, max(2, requestedMultiplier))) else { throw RenderingError.surfaceUnavailable }
         let current = Double(screen.maximumExtendedDynamicRangeColorComponentValue)
-        let multiplier = max(1, min(requestedMultiplier, current, potential, 2))
+        let multiplier = max(1, min(requestedMultiplier, current, potential))
         guard boostSurface.present(value: multiplier) else { throw RenderingError.surfaceUnavailable }
         return multiplier
     }

@@ -60,7 +60,26 @@ public struct DailySchedule: Codable, Equatable {
 }
 
 public struct SunBrightSettings: Codable, Equatable {
-    public static let multiplierRange = 1.0...2.0
+    public static let maximumTargetNits = 1600.0
+    public static let defaultHDRPauseApps = [
+        AppRule(bundleIdentifier: "com.apple.QuickTimePlayerX", name: "QuickTime Player"),
+        AppRule(bundleIdentifier: "com.apple.TV", name: "TV"),
+        AppRule(bundleIdentifier: "org.videolan.vlc", name: "VLC")
+    ]
+
+    public var sdrReferenceNits: Double = 600
+    public var pauseInMediaApps: Bool = true
+    public var hdrPauseApps: [AppRule] = SunBrightSettings.defaultHDRPauseApps
+
+    public var targetNits: Double {
+        get { multiplier * sdrReferenceNits }
+        set {
+            let value = newValue.isFinite ? newValue : sdrReferenceNits
+            multiplier = min(max(value, sdrReferenceNits), Self.maximumTargetNits) / sdrReferenceNits
+        }
+    }
+
+    public var targetNitsRange: ClosedRange<Double> { sdrReferenceNits...Self.maximumTargetNits }
 
     public var multiplier: Double
     public var onlyOnPowerAdapter: Bool
@@ -82,11 +101,17 @@ public struct SunBrightSettings: Codable, Equatable {
 
     /// User preferences are untrusted input, including previously saved versions.
     public mutating func normalize() {
-        multiplier = multiplier.isFinite ? min(max(multiplier, 1), 2) : 1.4
+        sdrReferenceNits = sdrReferenceNits.isFinite ? min(max(sdrReferenceNits, 300), 1000) : 600
+        multiplier = multiplier.isFinite ? min(max(multiplier, 1), Self.maximumTargetNits / sdrReferenceNits) : 1.4
         schedule.startMinute = min(max(schedule.startMinute, 0), 1439)
         schedule.endMinute = min(max(schedule.endMinute, 0), 1439)
+        apps = Self.normalizedRules(apps)
+        hdrPauseApps = Self.normalizedRules(hdrPauseApps)
+    }
+
+    private static func normalizedRules(_ rules: [AppRule]) -> [AppRule] {
         var identifiers = Set<String>()
-        apps = apps.compactMap { rule in
+        return rules.compactMap { rule in
             let identifier = rule.bundleIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !identifier.isEmpty, identifiers.insert(identifier).inserted else { return nil }
             var result = rule
@@ -99,7 +124,7 @@ public struct SunBrightSettings: Codable, Equatable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case multiplier, onlyOnPowerAdapter, apps, schedule
+        case multiplier, onlyOnPowerAdapter, apps, schedule, sdrReferenceNits, pauseInMediaApps, hdrPauseApps
     }
 
     public init(from decoder: Decoder) throws {
@@ -108,6 +133,9 @@ public struct SunBrightSettings: Codable, Equatable {
         onlyOnPowerAdapter = try values.decodeIfPresent(Bool.self, forKey: .onlyOnPowerAdapter) ?? false
         apps = try values.decodeIfPresent([AppRule].self, forKey: .apps) ?? []
         schedule = try values.decodeIfPresent(DailySchedule.self, forKey: .schedule) ?? DailySchedule()
+        sdrReferenceNits = try values.decodeIfPresent(Double.self, forKey: .sdrReferenceNits) ?? 600
+        pauseInMediaApps = try values.decodeIfPresent(Bool.self, forKey: .pauseInMediaApps) ?? true
+        hdrPauseApps = try values.decodeIfPresent([AppRule].self, forKey: .hdrPauseApps) ?? Self.defaultHDRPauseApps
         normalize()
     }
 }

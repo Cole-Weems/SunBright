@@ -1,0 +1,62 @@
+name: Prepare GitHub release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve and validate version
+        shell: bash
+        run: |
+          version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "App version must have the form major.minor.patch." >&2
+            exit 1
+          fi
+          tag="v$version"
+          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "$tag" ]]; then
+            echo "Tag must match the app version: $tag" >&2
+            exit 1
+          fi
+          echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+      - name: Test core and compile macOS sources
+        run: swift test
+      - name: Build and package for Apple Silicon
+        run: |
+          bash scripts/build-app.sh --apple-silicon
+          bash scripts/package-app.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SunBright-release
+          path: |
+            dist/SunBright-*.zip
+            dist/SunBright-*.zip.sha256
+      - name: Create draft release for review
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          # Never overwrite a published release or silently replace its assets.
+          gh release create "$RELEASE_TAG" \
+            "dist/SunBright-$APP_VERSION-apple-silicon.zip" \
+            "dist/SunBright-$APP_VERSION-apple-silicon.zip.sha256" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --draft \
+            --title "SunBright $APP_VERSION" \
+            --notes-file docs/RELEASE-NOTES.md

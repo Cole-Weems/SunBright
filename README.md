@@ -7,7 +7,8 @@ This is the first, experimental iteration. It uses temporary, click-through Meta
 ## Included
 
 - Menu bar controls with **Off**, **On**, and **Auto** modes.
-- A 100–200% brightness multiplier, capped by each display’s current HDR headroom.
+- Estimated brightness targets in nits, from the selected SDR reference up to 1600 nits, capped by each display’s current HDR headroom.
+- Manual HDR pause and configurable automatic pause while selected media apps are running.
 - Global **Option–Command–B** toggle, without Accessibility or Input Monitoring permissions.
 - Per-app activation based on the foreground app’s bundle identifier.
 - A daily schedule, including windows that cross midnight.
@@ -15,6 +16,20 @@ This is the first, experimental iteration. It uses temporary, click-through Meta
 - Saved preferences, per-display status, and cleanup on sleep, session changes, display disconnection, and quit.
 
 SunBright starts **off** on every launch. Your brightness, app rules, and schedule are saved; activation is never saved.
+
+## Download a prebuilt app
+
+Versioned builds can be distributed through [GitHub Releases](https://github.com/Cole-Weems/SunBright/releases). Look for a **published** release with a `SunBright-<version>-apple-silicon.zip` asset. A draft is visible only to maintainers and is not a public download. If no published release has an app ZIP, build from source below; GitHub’s **Source code** archives are not runnable apps.
+
+1. Download the versioned **SunBright ZIP** under Assets, extract it, and move `SunBright.app` to **Applications**. Release builds require an Apple Silicon Mac (M-series) running macOS 13 or later; these downloads do not support Intel Macs.
+2. Open the app from Applications. It appears as a sun in the menu bar, without a Dock icon, and starts Off.
+3. These free builds are **ad hoc signed, not Developer ID signed or notarized by Apple**. macOS may block the first launch. If you trust the source, use the per-app **System Settings → Privacy & Security → Open Anyway** approval when available. See [Apple’s guidance](https://support.apple.com/en-us/102445). Managed Macs may prohibit opening unnotarized apps.
+
+You do not need Xcode or an Apple Developer Program membership to run a prebuilt build. The repository’s visibility controls release access: if it is private, downloads require access to the repository. Public distribution needs a public repository or another public download location; this workflow does not change repository visibility.
+
+### Update a downloaded copy
+
+Quit SunBright using the power button in its menu. Download the new versioned ZIP, extract it, replace the old copy in Applications, and reopen it. Preferences are retained, but mode starts Off. Replacing the file without quitting does not update the running process. There is no automatic in-app updater yet.
 
 ## Build and run
 
@@ -83,11 +98,59 @@ For later launches, open `SunBright.app` in the checkout’s `dist` folder using
 
 If you see “No such file or directory” for the script, check that Terminal is inside the cloned repository. If `open` cannot find the app, resolve the build error first. If the app reports no HDR-capable display or unavailable HDR headroom, see the compatibility limitations below.
 
+### 4. Update your source build for testing
+
+If you built SunBright from this repository, first quit the running app using the power button in its menu. If you started it with `swift run`, stop that process with **Control–C** instead. Then run:
+
+```sh
+cd ~/Developer/SunBright
+git status --short
+git fetch origin
+git switch work
+git pull --ff-only origin work
+bash scripts/build-app.sh
+open dist/SunBright.app
+```
+
+Use your actual checkout path. If `git status` lists local edits, commit or stash them before updating; do not discard them. Stop and resolve any Git or build error before launching the app. These commands follow the `work` testing branch so they include changes that have not yet merged into `main`.
+
+Open **Settings** and check the version banner. This iteration is **0.2** and shows nits targets and an **HDR Pause** tab. Existing preferences are preserved; the previous multiplier is converted to an estimated nits target using a default 600-nit SDR reference. No preferences reset is required. If you copied the old app to Applications, replace that copy with the new `dist/SunBright.app` too, and launch only the intended copy.
+
+For this update, test these behaviors:
+
+- Move the nits slider and change the SDR reference in General settings. The target is an estimate; the display’s available headroom can limit the result.
+- Enable manual HDR pause while boosting. Confirm the status says paused and the boost disappears. Uncheck it to resume your selected mode and rules.
+- With automatic media-app pause enabled, open QuickTime Player, TV, or VLC. Confirm boosting pauses even when the player is idle or in the background, and resumes after all enabled selected players quit. Add your browser to HDR Pause settings if you use it for HDR playback.
+- Compare normal exit, Off, sleep/wake, and quitting while paused. Physical display output still needs testing on your Mac.
+
 ### Development and distribution alternatives
 
 To run directly from source during development, use `swift run SunBright` from the repository directory and keep Terminal open; press **Control–C** to stop that process. To work in Xcode, run `open Package.swift` from the same directory.
 
-For distribution, supply `SUNBRIGHT_SIGNING_IDENTITY` with your Developer ID Application identity when building, and notarize the resulting app separately. The local build is not a notarized release.
+For an Apple Silicon release build, run:
+
+```sh
+bash scripts/build-app.sh --apple-silicon
+bash scripts/package-app.sh
+```
+
+The packaging script creates `dist/SunBright-0.2.0-apple-silicon.zip` and a SHA-256 checksum alongside it. It preserves executable permissions and app metadata. For optional Developer ID signing, supply `SUNBRIGHT_SIGNING_IDENTITY` when building and notarize separately. Without it, the build is ad hoc signed and unnotarized.
+
+### Prepare a GitHub Release
+
+The **Prepare GitHub release** workflow tests the code, builds and verifies the Apple Silicon architecture, packages the app, and creates a **draft** GitHub Release with the ZIP and checksum. It needs no Apple signing secrets. It does not publish the draft or make the repository public.
+
+After merging the workflow into the default branch, maintainers can select **Actions → Prepare GitHub release → Run workflow** and choose the branch to build. Alternatively, push a version tag matching `CFBundleShortVersionString` in `Resources/Info.plist`:
+
+```sh
+# After committing and pushing the source you intend to release:
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+For later versions, first update the app version and build number in `Resources/Info.plist`, update the visible settings version and `docs/RELEASE-NOTES.md`, then commit, test, and push a new matching tag. Do not reuse a published version or tag. The workflow fails rather than overwriting an existing release.
+
+Review the draft’s assets and notes and test the downloaded app before publishing it in GitHub’s Releases page. Free builds retain the first-launch approval requirement. Draft creation, archive checks, and successful compilation do not validate HDR output on real displays.
 
 ## Controls and automation
 
@@ -97,25 +160,39 @@ For distribution, supply `SUNBRIGHT_SIGNING_IDENTITY` with your Developer ID App
 | On | Boosts supported connected displays, subject to the power adapter rule. |
 | Auto | Boosts when an enabled app rule **or** the daily schedule matches. |
 | Option–Command–B | Toggles manually. Select Auto again to resume automation. |
+| HDR pause | Removes overlays while preserving the selected activation mode. |
+| Media-app pause | Overrides On and Auto while any enabled selected player is running. |
 | Quit | Removes all overlays and exits. |
 
 In **Settings → App Rules**, add applications with the native app picker. Rules match exact bundle identifiers. Switching away from a matching app removes that trigger; a matching schedule can still keep the boost on. Opening SunBright’s own settings preserves the last foreground app.
 
 In **Settings → Schedule**, choose a start and end time, enable the schedule, and select **Auto**. Times follow your Mac’s local clock, with an inclusive start and exclusive end. An end earlier than the start continues into the following day. Equal times create an empty window.
 
+## Nits targets and HDR playback
+
+The slider defaults to **600–1600 estimated nits**. In General settings, select a **500**, **600**, or **1000 nit SDR reference** appropriate to your display and current brightness setting. SunBright converts the target into a relative multiplier and caps the rendered effect to each display’s current headroom. The reference is shared across connected displays, so mixed displays can have different actual output. These numbers are estimates, not measured or guaranteed luminance.
+
+[Apple’s MacBook Pro specifications](https://support.apple.com/en-gb/117737) distinguish **1000 nits sustained full-screen** from **1600 nits peak HDR**; 1600 is not a promise of sustained full-screen output. SDR brightness varies by model and conditions. A target equal to the SDR reference disables the overlays.
+
+**Pause for HDR playback** in the menu or HDR Pause settings removes all overlays until you uncheck it. It preserves your mode rather than turning automation off.
+
+**Automatically pause while selected media apps are running** is enabled by default for QuickTime Player, TV, and VLC. Add/remove players or browsers in **Settings → HDR Pause**. Pausing applies to background players too and overrides manual On and automatic activation; quitting all selected players allows the current mode and rules to resume within about a second.
+
+This is deliberately an **app-based safeguard, not automatic HDR-content detection**. The public display headroom API reports capability and available range, not whether another app is playing HDR; SunBright’s own overlays also request EDR. No playback inspection, screen recording, or private media APIs are used. Consequently, selected apps pause the boost for SDR video and while idle too. For HDR in an unselected app, use the manual pause or add that app. See [Apple’s EDR documentation](https://developer.apple.com/documentation/appkit/nsscreen/maximumextendeddynamicrangecolorcomponentvalue).
+
 ## How the effect works
 
-Each supported display gets a one-pixel EDR trigger and a full-screen multiply-compositing layer. The layers use floating-point Metal surfaces in extended linear sRGB. The multiplier follows the display’s current headroom, up to the selected value and a 2× cap. macOS retains control of the display’s output.
+Each supported display gets a one-pixel EDR trigger and a full-screen multiply-compositing layer. The layers use floating-point Metal surfaces in extended linear sRGB. The multiplier follows the display’s current headroom, up to the requested nits target relative to the selected SDR reference. macOS retains control of the display’s output.
 
 The implementation follows the documented [Metal EDR configuration](https://developer.apple.com/documentation/metal/performing-your-own-tone-mapping) and the publicly described [EDR plus multiply-overlay technique](https://yogeshvar.github.io/maxnits.html). It is an independent implementation with no third-party runtime dependencies. No screen capture is performed.
 
 ## Current limitations
 
-- GitHub Actions verifies the native macOS build, all 28 core tests, release packaging, and the local app signature on a `macos-15` runner. Physical HDR display behavior remains unverified.
-- Brightness depends on available HDR headroom, system brightness, display mode, and macOS’s thermal and power management. The slider is a requested multiplier, not a guaranteed luminance or nit value.
+- GitHub Actions verifies the native macOS build, the core tests, release packaging, and the local app signature on a `macos-15` runner. Physical HDR display behavior remains unverified.
+- Brightness depends on available HDR headroom, system brightness, display mode, and macOS’s thermal and power management. The slider is an estimated nits target, not a measured or guaranteed luminance.
 - The single trigger pixel may be visible on displays without rounded corners. Multiply compositing, protected video, screen sharing, Mission Control, full-screen Spaces, and mixed-display setups need hardware checks before release.
 - The shortcut is fixed in this iteration. SunBright reports a registration conflict and keeps menu controls available.
-- Login launch, configurable shortcuts, per-display selection, and a signed/notarized release are future work.
+- Login launch, configurable shortcuts, per-display selection, a notarized release, and an automatic updater are future work.
 
 ## Development and validation
 
