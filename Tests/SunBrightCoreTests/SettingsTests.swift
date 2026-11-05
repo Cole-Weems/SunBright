@@ -22,7 +22,7 @@ final class SettingsTests: XCTestCase {
         {"multiplier": 1000, "schedule": {"isEnabled": true, "startMinute": -50, "endMinute": 5000}}
         """
         let settings = try JSONDecoder().decode(SunBrightSettings.self, from: Data(json.utf8))
-        XCTAssertEqual(settings.multiplier, 2)
+        XCTAssertEqual(settings.multiplier, 1600.0 / 600.0)
         XCTAssertEqual(settings.schedule.startMinute, 0)
         XCTAssertEqual(settings.schedule.endMinute, 1439)
     }

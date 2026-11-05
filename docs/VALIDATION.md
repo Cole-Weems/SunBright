@@ -30,8 +30,8 @@ These checks establish native build and packaging compatibility. The physical-di
 Run on a Mac with an HDR-capable display and, if available, an SDR external display. Record the macOS version, display model, display mode, and architecture with the results.
 
 - [ ] Launch the app bundle. Only the menu bar sun appears; mode starts Off and brightness stays unchanged.
-- [ ] Select On at 140%. Confirm SDR content becomes brighter, colors and blacks remain correct, pointer behavior is normal, and supported display percentages reflect the available headroom.
-- [ ] Move between 100% and 200%. At 100%, no overlays remain. A display with limited headroom must not exceed its current limit.
+- [ ] Select On with an estimated target above the SDR reference. Confirm SDR content becomes brighter, colors and blacks remain correct, pointer behavior is normal, and the estimated display readouts reflect the available headroom.
+- [ ] Move between the SDR reference and the 1600-nit target. At the reference value, no overlays remain. A display with limited headroom must not exceed its current limit.
 - [ ] Select Off and quit separately. Compare against the starting appearance and verify the system brightness slider and selected display profile are unchanged.
 - [ ] Force quit while boosted. Confirm the windows disappear and the original appearance returns without launching SunBright again.
 - [ ] Trigger Option–Command–B from another app. Repeat while Auto is active and while waiting. Manual mode must toggle Off even if paused by the battery rule.
@@ -46,3 +46,15 @@ Run on a Mac with an HDR-capable display and, if available, an SDR external disp
 - [ ] Relaunch after changing preferences. Confirm preferences persist and mode is Off.
 
 If compositing produces a solid white surface, visible artifacts, or an unexpected image, turn SunBright Off or quit. Treat that display/macOS combination as unsupported until its rendering behavior is fixed; a successful core test run does not validate the display effect.
+
+## Nits, pause, and distribution update
+
+The portable suite now includes ten additional tests for nits conversion/clamping, legacy preference migration, reference and media-rule normalization, HDR pause precedence, background player handling, and resuming the selected mode. The initial macOS CI evidence above applies to the first iteration; the updated native and universal packaging checks run on the current branch.
+
+- [ ] Confirm estimated nits, changed SDR references, and the absence of claims of measured output.
+- [ ] Verify manual pause removes overlays and restores the selected mode when cleared.
+- [ ] Verify selected media apps pause both On and Auto, including idle and background apps; quitting all selected apps resumes only the current rules.
+- [ ] Verify disabled/removed media rules, browsers added as media apps, and the default QuickTime/TV/VLC rules.
+- [ ] Download the packaged ZIP on Intel and Apple Silicon Macs. Verify extraction retains executable permissions and the app launches after the user’s per-app approval if allowed by macOS policy.
+- [ ] Quit and replace an older app with the updated build; confirm the version and preserved preferences.
+- [ ] Review the draft release’s ZIP, checksum, notes, and intended audience before publishing. A private repository’s releases remain restricted.

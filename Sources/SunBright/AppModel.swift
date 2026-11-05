@@ -32,6 +32,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var shortcutAvailable = true
     @Published private(set) var frontmostAppName = "No app selected"
     @Published var appSelectionError: String?
+    @Published var manualHDRPause = false { didSet { refresh() } }
 
     private let store: PreferencesStore
     private let renderer = OverlayRenderer()
@@ -124,7 +125,10 @@ final class AppModel: ObservableObject {
         refresh()
     }
 
-    func chooseApps() {
+    func chooseApps() { chooseApps(forHDRPause: false) }
+    func chooseHDRApps() { chooseApps(forHDRPause: true) }
+
+    private func chooseApps(forHDRPause: Bool) {
         let panel = NSOpenPanel()
         panel.title = "Choose apps for SunBright"
         panel.prompt = "Add Apps"
@@ -134,6 +138,7 @@ final class AppModel: ObservableObject {
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
         guard panel.runModal() == .OK else { return }
         var updated = settings
+        var rules = forHDRPause ? updated.hdrPauseApps : updated.apps
         var rejected: [String] = []
         for url in panel.urls {
             guard let bundle = Bundle(url: url), let identifier = bundle.bundleIdentifier,
@@ -141,13 +146,14 @@ final class AppModel: ObservableObject {
                 rejected.append(url.deletingPathExtension().lastPathComponent)
                 continue
             }
-            guard !updated.apps.contains(where: { $0.bundleIdentifier == identifier }) else { continue }
+            guard !rules.contains(where: { $0.bundleIdentifier == identifier }) else { continue }
             let name = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
                 ?? bundle.object(forInfoDictionaryKey: "CFBundleName") as? String
                 ?? url.deletingPathExtension().lastPathComponent
-            updated.apps.append(AppRule(bundleIdentifier: identifier, name: name))
+            rules.append(AppRule(bundleIdentifier: identifier, name: name))
         }
-        updated.apps.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        rules.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        if forHDRPause { updated.hdrPauseApps = rules } else { updated.apps = rules }
         settings = updated
         appSelectionError = rejected.isEmpty ? nil : "Could not add: \(rejected.joined(separator: ", ")). Choose a different app."
     }
@@ -170,7 +176,11 @@ final class AppModel: ObservableObject {
             isSuspended: systemSleeping || displaysSleeping || sessionInactive,
             isOnBattery: Self.isOnBattery(),
             frontmostBundleIdentifier: frontmostBundleIdentifier,
-            minuteOfDay: (components.hour ?? 0) * 60 + (components.minute ?? 0)
+            minuteOfDay: (components.hour ?? 0) * 60 + (components.minute ?? 0),
+            manualHDRPause: manualHDRPause,
+            runningBundleIdentifiers: Set(NSWorkspace.shared.runningApplications.compactMap {
+                $0.isTerminated ? nil : $0.bundleIdentifier
+            })
         )
         reason = ActivationPolicy.evaluate(mode: mode, settings: settings, context: context)
         do {

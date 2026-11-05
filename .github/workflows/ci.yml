@@ -15,11 +15,15 @@ jobs:
       - name: Test activation and preferences
         run: swift test
       - name: Build and verify the app bundle
-        run: bash scripts/build-app.sh
+        run: |
+          bash scripts/build-app.sh --universal
+          bash scripts/package-app.sh
       - uses: actions/upload-artifact@v4
         with:
           name: SunBright-macOS
-          path: dist/SunBright.app
+          path: |
+            dist/SunBright-*.zip
+            dist/SunBright-*.zip.sha256
 
   core:
     runs-on: ubuntu-latest

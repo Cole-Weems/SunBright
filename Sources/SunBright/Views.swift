@@ -32,7 +32,9 @@ struct MenuBarView: View {
             .pickerStyle(.segmented)
             .labelsHidden()
 
-            BrightnessControl(multiplier: $model.settings.multiplier)
+            BrightnessControl(settings: $model.settings)
+            Toggle("Pause for HDR playback", isOn: $model.manualHDRPause)
+                .font(.callout)
 
             VStack(alignment: .leading, spacing: 10) {
                 Text("DISPLAYS").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
@@ -40,7 +42,7 @@ struct MenuBarView: View {
                     Text("No displays detected").font(.callout).foregroundStyle(.secondary)
                 }
                 ForEach(model.displays) { display in
-                    DisplayRow(display: display)
+                    DisplayRow(display: display, referenceNits: model.settings.sdrReferenceNits)
                 }
             }
             .padding(12)
@@ -96,26 +98,26 @@ private struct SunBadge: View {
 
 @MainActor
 private struct BrightnessControl: View {
-    @Binding var multiplier: Double
+    @Binding var settings: SunBrightSettings
 
     var body: some View {
         VStack(spacing: 10) {
             HStack {
-                Text("Brightness").font(.callout.weight(.medium))
+                Text("Estimated target").font(.callout.weight(.medium))
                 Spacer()
-                Text(multiplier, format: .percent.precision(.fractionLength(0)))
+                Text("\(Int(settings.targetNits.rounded())) nits")
                     .font(.system(.title3, design: .rounded).weight(.semibold))
                     .monospacedDigit()
             }
-            Slider(value: $multiplier, in: SunBrightSettings.multiplierRange, step: 0.05) {
-                Text("Brightness multiplier")
+            Slider(value: $settings.targetNits, in: settings.targetNitsRange, step: 10) {
+                Text("Estimated brightness target in nits")
             } minimumValueLabel: {
                 Image(systemName: "sun.min")
             } maximumValueLabel: {
                 Image(systemName: "sun.max.fill")
             }
-            .accessibilityValue("\(Int((multiplier * 100).rounded())) percent")
-            Text("Actual brightness follows your display’s available HDR headroom.")
+            .accessibilityValue("\(Int(settings.targetNits.rounded())) nits estimated")
+            Text("Estimate using a \(Int(settings.sdrReferenceNits)) nit SDR reference. Actual output follows available headroom; 1600 nits is a peak HDR target, not sustained brightness.")
                 .font(.caption).foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -125,6 +127,7 @@ private struct BrightnessControl: View {
 @MainActor
 private struct DisplayRow: View {
     let display: DisplayStatus
+    let referenceNits: Double
 
     var body: some View {
         HStack(spacing: 10) {
@@ -136,7 +139,7 @@ private struct DisplayRow: View {
             }
             Spacer(minLength: 0)
             if display.effectiveMultiplier > 1.01 {
-                Text(display.effectiveMultiplier, format: .percent.precision(.fractionLength(0)))
+                Text("≈\(Int((display.effectiveMultiplier * referenceNits).rounded())) nits")
                     .font(.caption.weight(.semibold)).foregroundStyle(.orange).monospacedDigit()
             }
         }
@@ -154,7 +157,7 @@ struct SettingsView: View {
                 SunBadge(size: 48)
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Your display, a little brighter.").font(.title2.weight(.semibold))
-                    Text("SunBright 0.1 · First light").font(.callout).foregroundStyle(.secondary)
+                    Text("SunBright 0.2 · Nits and HDR pause").font(.callout).foregroundStyle(.secondary)
                 }
                 Spacer()
             }.padding(24)
@@ -162,6 +165,7 @@ struct SettingsView: View {
             TabView {
                 general.tabItem { Label("General", systemImage: "sun.max") }
                 apps.tabItem { Label("App Rules", systemImage: "app.dashed") }
+                hdr.tabItem { Label("HDR Pause", systemImage: "play.rectangle") }
                 schedule.tabItem { Label("Schedule", systemImage: "clock") }
             }
             .padding(.horizontal, 16)
@@ -177,7 +181,20 @@ struct SettingsView: View {
                 Picker("Activation", selection: $model.mode) {
                     ForEach(ActivationMode.allCases) { mode in Text(mode.title).tag(mode) }
                 }
-                BrightnessControl(multiplier: $model.settings.multiplier).padding(.vertical, 4)
+                BrightnessControl(settings: $model.settings).padding(.vertical, 4)
+                Picker("SDR reference (estimated nits)", selection: Binding(get: { model.settings.sdrReferenceNits }, set: { value in
+                    var settings = model.settings
+                    let target = settings.targetNits
+                    settings.sdrReferenceNits = value
+                    settings.targetNits = target
+                    model.settings = settings
+                })) {
+                    Text("500 nits").tag(500.0)
+                    Text("600 nits").tag(600.0)
+                    Text("1000 nits").tag(1000.0)
+                }
+                Text("Choose the SDR reference for your display and brightness setting. This is a shared estimate for connected displays, not a measurement.")
+                    .font(.caption).foregroundStyle(.secondary)
                 Toggle("Only boost on a power adapter", isOn: $model.settings.onlyOnPowerAdapter)
             } footer: {
                 Text("SunBright starts off each time you launch it. Your brightness and automation preferences are saved.")
@@ -190,7 +207,7 @@ struct SettingsView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Connected displays") {
-                ForEach(model.displays) { DisplayRow(display: $0) }
+                ForEach(model.displays) { DisplayRow(display: $0, referenceNits: model.settings.sdrReferenceNits) }
                 if !model.hasHDRDisplay {
                     Text("Connect an HDR-capable display to use the brightness boost.")
                         .font(.caption).foregroundStyle(.secondary)
@@ -256,6 +273,38 @@ struct SettingsView: View {
             Text("Current app: \(model.frontmostAppName)").font(.caption).foregroundStyle(.secondary)
         }
         .padding(20)
+    }
+
+    private var hdr: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Toggle("Pause for HDR playback", isOn: $model.manualHDRPause)
+            Toggle("Automatically pause while selected media apps are running", isOn: $model.settings.pauseInMediaApps)
+            Text("This is an app-based safeguard, not HDR detection. Boost pauses even for SDR playback or an idle selected app, including background players. Quit the player to resume. Add your browser if you watch HDR video there.")
+                .font(.callout).foregroundStyle(.secondary)
+            HStack {
+                Text("Media apps").font(.headline)
+                Spacer()
+                Button("Add Apps…", action: model.chooseHDRApps)
+            }
+            List {
+                ForEach($model.settings.hdrPauseApps) { $app in
+                    HStack {
+                        Toggle(app.name, isOn: $app.isEnabled)
+                        Spacer()
+                        Button {
+                            model.settings.hdrPauseApps.removeAll { $0.bundleIdentifier == app.bundleIdentifier }
+                        } label: { Image(systemName: "minus.circle") }
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel("Remove \(app.name)")
+                    }
+                }
+            }
+            if let error = model.appSelectionError {
+                Text(error).font(.caption).foregroundStyle(.orange)
+            }
+            Text("Pausing removes all SunBright overlays and preserves your activation mode. Disabling the manual pause or quitting selected players lets your mode and rules resume.")
+                .font(.caption).foregroundStyle(.secondary)
+        }.padding(20)
     }
 
     private var schedule: some View {
