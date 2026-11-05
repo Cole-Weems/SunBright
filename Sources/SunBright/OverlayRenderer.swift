@@ -116,9 +116,9 @@ private final class OverlayPanel: NSPanel {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
-    init(frame: NSRect, screen: NSScreen, surface: MetalSurface, trigger: Bool = false) {
-        super.init(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered,
-                   defer: false, screen: screen)
+    init(frame: NSRect, surface: MetalSurface, trigger: Bool = false) {
+        super.init(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel],
+                   backing: .buffered, defer: false)
         isOpaque = false
         backgroundColor = .clear
         hasShadow = false
@@ -165,9 +165,9 @@ private final class DisplayOverlay {
         // reliably request HDR headroom from WindowServer.
         let trigger = OverlayPanel(
             frame: NSRect(x: screen.frame.minX, y: screen.frame.maxY - pixel, width: pixel, height: pixel),
-            screen: screen, surface: triggerSurface, trigger: true
+            surface: triggerSurface, trigger: true
         )
-        let boost = OverlayPanel(frame: screen.frame, screen: screen, surface: boostSurface)
+        let boost = OverlayPanel(frame: screen.frame, surface: boostSurface)
         self.trigger = trigger
         self.boost = boost
         trigger.orderFrontRegardless()
