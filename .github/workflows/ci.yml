@@ -1,0 +1,30 @@
+name: Build and test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test activation and preferences
+        run: swift test
+      - name: Build and verify the app bundle
+        run: bash scripts/build-app.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SunBright-macOS
+          path: dist/SunBright.app
+
+  core:
+    runs-on: ubuntu-latest
+    container: swift:6.0.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test portable core
+        run: swift test
