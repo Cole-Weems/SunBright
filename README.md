@@ -1,5 +1,3 @@
-# SunBright
-
 ## SunBright is a Mac tool to force HDR brightness for SDR content
 
 ### Features:
