@@ -51,7 +51,7 @@ The implementation follows the documented [Metal EDR configuration](https://deve
 
 ## Current limitations
 
-- The app has not yet been built or exercised on macOS hardware. Core tests and Swift syntax checks have been run on Linux; the macOS CI job is supplied for native compilation and packaging.
+- GitHub Actions verifies the native macOS build, all 28 core tests, release packaging, and the local app signature on a `macos-15` runner. Physical HDR display behavior remains unverified.
 - Brightness depends on available HDR headroom, system brightness, display mode, and macOS’s thermal and power management. The slider is a requested multiplier, not a guaranteed luminance or nit value.
 - The single trigger pixel may be visible on displays without rounded corners. Multiply compositing, protected video, screen sharing, Mission Control, full-screen Spaces, and mixed-display setups need hardware checks before release.
 - The shortcut is fixed in this iteration. SunBright reports a registration conflict and keeps menu controls available.

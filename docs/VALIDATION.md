@@ -7,9 +7,9 @@
 - Swift’s frontend parses all macOS sources successfully. This is a syntax check, not a macOS SDK type check.
 - The app bundle’s property list parses, the packaging script passes `bash -n`, and Git whitespace checks pass.
 
-## macOS build gate
+## Verified in macOS CI
 
-The supplied GitHub Actions workflow runs these steps on macOS:
+On November 5, 2026, the [macOS CI run for commit `61443c9`](https://github.com/Cole-Weems/SunBright/actions/runs/42104636730) passed on the supported `macos-15` runner:
 
 ```sh
 swift test
@@ -17,7 +17,13 @@ bash scripts/build-app.sh
 codesign --verify --strict dist/SunBright.app
 ```
 
-The workflow has not been run from this workspace. A native build is required before treating this iteration as ready to use.
+- All 28 core tests passed, and the macOS application sources compiled.
+- The release app bundle built successfully; its property list and ad hoc signature verified.
+- The workflow uploaded the `SunBright-macOS` app artifact.
+
+The original macOS jobs were canceled before starting because `macos-14` was retired on November 2, 2026. The workflow now uses `macos-15`, and the overlay panel calls the designated `NSPanel` initializer required by the macOS SDK.
+
+These checks establish native build and packaging compatibility. The physical-display checks below remain unperformed.
 
 ## Physical-display checklist
 
