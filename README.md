@@ -19,9 +19,9 @@ SunBright starts **off** on every launch. Your brightness, app rules, and schedu
 
 ## Download a prebuilt app
 
-Versioned builds can be distributed through [GitHub Releases](https://github.com/Cole-Weems/SunBright/releases). Look for a **published** release with a `SunBright-<version>.zip` asset. A draft is visible only to maintainers and is not a public download. If no published release has an app ZIP, build from source below; GitHub’s **Source code** archives are not runnable apps.
+Versioned builds can be distributed through [GitHub Releases](https://github.com/Cole-Weems/SunBright/releases). Look for a **published** release with a `SunBright-<version>-apple-silicon.zip` asset. A draft is visible only to maintainers and is not a public download. If no published release has an app ZIP, build from source below; GitHub’s **Source code** archives are not runnable apps.
 
-1. Download the versioned **SunBright ZIP** under Assets, extract it, and move `SunBright.app` to **Applications**. Release builds support both Intel and Apple Silicon Macs, on macOS 13 or later.
+1. Download the versioned **SunBright ZIP** under Assets, extract it, and move `SunBright.app` to **Applications**. Release builds require an Apple Silicon Mac (M-series) running macOS 13 or later; these downloads do not support Intel Macs.
 2. Open the app from Applications. It appears as a sun in the menu bar, without a Dock icon, and starts Off.
 3. These free builds are **ad hoc signed, not Developer ID signed or notarized by Apple**. macOS may block the first launch. If you trust the source, use the per-app **System Settings → Privacy & Security → Open Anyway** approval when available. See [Apple’s guidance](https://support.apple.com/en-us/102445). Managed Macs may prohibit opening unnotarized apps.
 
@@ -127,18 +127,18 @@ For this update, test these behaviors:
 
 To run directly from source during development, use `swift run SunBright` from the repository directory and keep Terminal open; press **Control–C** to stop that process. To work in Xcode, run `open Package.swift` from the same directory.
 
-For a build that runs on both Intel and Apple Silicon Macs, run:
+For an Apple Silicon release build, run:
 
 ```sh
-bash scripts/build-app.sh --universal
+bash scripts/build-app.sh --apple-silicon
 bash scripts/package-app.sh
 ```
 
-The packaging script creates `dist/SunBright-0.2.0.zip` and a SHA-256 checksum alongside it. It preserves executable permissions and app metadata. For optional Developer ID signing, supply `SUNBRIGHT_SIGNING_IDENTITY` when building and notarize separately. Without it, the build is ad hoc signed and unnotarized.
+The packaging script creates `dist/SunBright-0.2.0-apple-silicon.zip` and a SHA-256 checksum alongside it. It preserves executable permissions and app metadata. For optional Developer ID signing, supply `SUNBRIGHT_SIGNING_IDENTITY` when building and notarize separately. Without it, the build is ad hoc signed and unnotarized.
 
 ### Prepare a GitHub Release
 
-The **Prepare GitHub release** workflow tests the code, builds and verifies both architectures, packages the app, and creates a **draft** GitHub Release with the ZIP and checksum. It needs no Apple signing secrets. It does not publish the draft or make the repository public.
+The **Prepare GitHub release** workflow tests the code, builds and verifies the Apple Silicon architecture, packages the app, and creates a **draft** GitHub Release with the ZIP and checksum. It needs no Apple signing secrets. It does not publish the draft or make the repository public.
 
 After merging the workflow into the default branch, maintainers can select **Actions → Prepare GitHub release → Run workflow** and choose the branch to build. Alternatively, push a version tag matching `CFBundleShortVersionString` in `Resources/Info.plist`:
 

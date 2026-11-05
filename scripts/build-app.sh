@@ -12,11 +12,11 @@ cd "$repo_dir"
 build_args=(--configuration release)
 case "${1:-}" in
     "") ;;
-    --universal) build_args+=(--arch arm64 --arch x86_64) ;;
-    *) echo "Usage: bash scripts/build-app.sh [--universal]" >&2; exit 1 ;;
+    --apple-silicon) build_args+=(--arch arm64) ;;
+    *) echo "Usage: bash scripts/build-app.sh [--apple-silicon]" >&2; exit 1 ;;
 esac
 if [[ $# -gt 1 ]]; then
-    echo "Usage: bash scripts/build-app.sh [--universal]" >&2
+    echo "Usage: bash scripts/build-app.sh [--apple-silicon]" >&2
     exit 1
 fi
 
@@ -32,7 +32,7 @@ plutil -lint "$app_dir/Contents/Info.plist"
 # Developer ID Application identity for a distributable build; notarize separately.
 codesign --force --options runtime --sign "${SUNBRIGHT_SIGNING_IDENTITY:--}" "$app_dir"
 codesign --verify --strict "$app_dir"
-if [[ "${1:-}" == "--universal" ]]; then
-    lipo -verify_arch arm64 x86_64 "$app_dir/Contents/MacOS/SunBright"
+if [[ "${1:-}" == "--apple-silicon" ]]; then
+    lipo "$app_dir/Contents/MacOS/SunBright" -verify_arch arm64
 fi
 echo "Built $app_dir"

@@ -36,9 +36,9 @@ jobs:
           echo "APP_VERSION=$version" >> "$GITHUB_ENV"
       - name: Test core and compile macOS sources
         run: swift test
-      - name: Build and package for Intel and Apple Silicon
+      - name: Build and package for Apple Silicon
         run: |
-          bash scripts/build-app.sh --universal
+          bash scripts/build-app.sh --apple-silicon
           bash scripts/package-app.sh
       - uses: actions/upload-artifact@v4
         with:
@@ -53,8 +53,8 @@ jobs:
         run: |
           # Never overwrite a published release or silently replace its assets.
           gh release create "$RELEASE_TAG" \
-            "dist/SunBright-$APP_VERSION.zip" \
-            "dist/SunBright-$APP_VERSION.zip.sha256" \
+            "dist/SunBright-$APP_VERSION-apple-silicon.zip" \
+            "dist/SunBright-$APP_VERSION-apple-silicon.zip.sha256" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --draft \

@@ -16,7 +16,7 @@ jobs:
         run: swift test
       - name: Build and verify the app bundle
         run: |
-          bash scripts/build-app.sh --universal
+          bash scripts/build-app.sh --apple-silicon
           bash scripts/package-app.sh
       - uses: actions/upload-artifact@v4
         with:

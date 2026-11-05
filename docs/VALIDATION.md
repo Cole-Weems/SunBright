@@ -49,12 +49,12 @@ If compositing produces a solid white surface, visible artifacts, or an unexpect
 
 ## Nits, pause, and distribution update
 
-The portable suite now includes ten additional tests for nits conversion/clamping, legacy preference migration, reference and media-rule normalization, HDR pause precedence, background player handling, and resuming the selected mode. The initial macOS CI evidence above applies to the first iteration; the updated native and universal packaging checks run on the current branch.
+The portable suite now includes ten additional tests for nits conversion/clamping, legacy preference migration, reference and media-rule normalization, HDR pause precedence, background player handling, and resuming the selected mode. The initial macOS CI evidence above applies to the first iteration; the updated native and Apple Silicon packaging checks run on the current branch.
 
 - [ ] Confirm estimated nits, changed SDR references, and the absence of claims of measured output.
 - [ ] Verify manual pause removes overlays and restores the selected mode when cleared.
 - [ ] Verify selected media apps pause both On and Auto, including idle and background apps; quitting all selected apps resumes only the current rules.
 - [ ] Verify disabled/removed media rules, browsers added as media apps, and the default QuickTime/TV/VLC rules.
-- [ ] Download the packaged ZIP on Intel and Apple Silicon Macs. Verify extraction retains executable permissions and the app launches after the user’s per-app approval if allowed by macOS policy.
+- [ ] Download the packaged ZIP on an Apple Silicon Mac; confirm the executable contains only the arm64 architecture. Verify extraction retains executable permissions and the app launches after the user’s per-app approval if allowed by macOS policy.
 - [ ] Quit and replace an older app with the updated build; confirm the version and preserved preferences.
 - [ ] Review the draft release’s ZIP, checksum, notes, and intended audience before publishing. A private repository’s releases remain restricted.
