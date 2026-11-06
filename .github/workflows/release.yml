@@ -1,24 +1,43 @@
-name: Prepare GitHub release
+name: Publish GitHub release
 
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing version tag to build and publish (for example, v0.2.0)'
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   release:
     runs-on: macos-15
+    timeout-minutes: 30
     permissions:
       contents: write
     steps:
+      - name: Validate release tag
+        env:
+          REQUESTED_TAG: ${{ inputs.tag || github.ref_name }}
+        shell: bash
+        run: |
+          if [[ ! "$REQUESTED_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Select an existing version tag with the form vmajor.minor.patch." >&2
+            exit 1
+          fi
+          echo "RELEASE_TAG=$REQUESTED_TAG" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+          persist-credentials: false
       - name: Resolve and validate version
         shell: bash
         run: |
@@ -27,12 +46,10 @@ jobs:
             echo "App version must have the form major.minor.patch." >&2
             exit 1
           fi
-          tag="v$version"
-          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "$tag" ]]; then
-            echo "Tag must match the app version: $tag" >&2
+          if [[ "$RELEASE_TAG" != "v$version" ]]; then
+            echo "Tag must match the app version: v$version" >&2
             exit 1
           fi
-          echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
           echo "APP_VERSION=$version" >> "$GITHUB_ENV"
       - name: Test core and compile macOS sources
         run: swift test
@@ -43,20 +60,34 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: SunBright-release
+          if-no-files-found: error
           path: |
             dist/SunBright-*.zip
             dist/SunBright-*.zip.sha256
-      - name: Create draft release for review
+      - name: Publish release and upload downloads
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          # Never overwrite a published release or silently replace its assets.
-          gh release create "$RELEASE_TAG" \
-            "dist/SunBright-$APP_VERSION-apple-silicon.zip" \
-            "dist/SunBright-$APP_VERSION-apple-silicon.zip.sha256" \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
-            --draft \
-            --title "SunBright $APP_VERSION" \
-            --notes-file docs/RELEASE-NOTES.md
+          assets=(
+            "dist/SunBright-$APP_VERSION-apple-silicon.zip"
+            "dist/SunBright-$APP_VERSION-apple-silicon.zip.sha256"
+          )
+          if is_draft=$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft); then
+            # Retrying a tag repairs its downloads without replacing edited notes.
+            gh release upload "$RELEASE_TAG" "${assets[@]}" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            # Keep a new release private until both downloads have been uploaded.
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --verify-tag \
+              --draft \
+              --title "SunBright $APP_VERSION" \
+              --notes-file docs/RELEASE-NOTES.md \
+              --generate-notes
+            is_draft=true
+          fi
+          if [[ "$is_draft" == "true" ]]; then
+            gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --verify-tag
+          fi

@@ -57,7 +57,7 @@ The portable suite now includes ten additional tests for nits conversion/clampin
 - [ ] Verify disabled/removed media rules, browsers added as media apps, and the default QuickTime/TV/VLC rules.
 - [ ] Download the packaged ZIP on an Apple Silicon Mac; confirm the executable contains only the arm64 architecture. Verify extraction retains executable permissions and the app launches after the user’s per-app approval if allowed by macOS policy.
 - [ ] Quit and replace an older app with the updated build; confirm the version and preserved preferences.
-- [ ] Review the draft release’s ZIP, checksum, notes, and intended audience before publishing. A private repository’s releases remain restricted.
+- [ ] Complete hardware checks and review release notes before pushing a version tag; matching tags now publish automatically. Check the published ZIP, checksum, and generated change notes, and confirm a retry updates the same tag’s downloads. A private repository’s releases remain restricted.
 
 ## Launch at Login
 

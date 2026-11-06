@@ -137,21 +137,25 @@ bash scripts/package-app.sh
 
 The packaging script creates `dist/SunBright-0.2.0-apple-silicon.zip` and a SHA-256 checksum alongside it. It preserves executable permissions and app metadata. For optional Developer ID signing, supply `SUNBRIGHT_SIGNING_IDENTITY` when building and notarize separately. Without it, the build is ad hoc signed and unnotarized.
 
-### Prepare a GitHub Release
+### Automatic GitHub Releases
 
-The **Prepare GitHub release** workflow tests the code, builds and verifies the Apple Silicon architecture, packages the app, and creates a **draft** GitHub Release with the ZIP and checksum. It needs no Apple signing secrets. It does not publish the draft or make the repository public.
+The **Publish GitHub release** workflow automatically tests, builds, and publishes a release when you push a version tag. It verifies the Apple Silicon app bundle and signature, then uploads the versioned ZIP and SHA-256 checksum. New releases include `docs/RELEASE-NOTES.md` followed by GitHub’s generated change notes. The workflow uses GitHub’s built-in token and needs no Apple signing secrets.
 
-After merging the workflow into the default branch, maintainers can select **Actions → Prepare GitHub release → Run workflow** and choose the branch to build. Alternatively, push a version tag matching `CFBundleShortVersionString` in `Resources/Info.plist`:
+Before tagging a new version, update `CFBundleShortVersionString` and the build number in `Resources/Info.plist`, the visible settings version, and `docs/RELEASE-NOTES.md`. Commit, test, and merge the source you intend to release into `main`. Then push a tag matching the app version:
 
 ```sh
-# After committing and pushing the source you intend to release:
-git tag v0.2.0
-git push origin v0.2.0
+git switch main
+git pull --ff-only origin main
+version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)
+git tag "v$version"
+git push origin "v$version"
 ```
 
-For later versions, first update the app version and build number in `Resources/Info.plist`, update the visible settings version and `docs/RELEASE-NOTES.md`, then commit, test, and push a new matching tag. Do not reuse a published version or tag. The workflow fails rather than overwriting an existing release.
+Tags must have the form `v<major>.<minor>.<patch>` and match the version in the tagged source. The workflow always checks out that exact tag; it rejects missing tags and version mismatches before publishing. Pushing ordinary commits runs CI without creating a release. Do not move a published tag to new code; give source changes a new version and tag.
 
-Review the draft’s assets and notes and test the downloaded app before publishing it in GitHub’s Releases page. Free builds retain the first-launch approval requirement. Draft creation, archive checks, and successful compilation do not validate HDR output on real displays.
+To retry a failed release or refresh the downloads for an existing tag, select **Actions → Publish GitHub release → Run workflow** and enter the existing tag in **tag**. The selected branch supplies the workflow, but the app is built from the entered tag. Reruns replace the same tag’s ZIP and checksum while preserving existing release notes. A new release stays a draft until its uploads succeed, then publishes automatically; a retry also finishes publishing an existing draft.
+
+Merge this workflow into the default branch to enable manual runs. Releases follow the repository’s existing visibility. Free builds remain ad hoc signed and unnotarized, with the first-launch approval requirement. Automated build and archive checks do not validate HDR output on real displays; complete the relevant [hardware checks](docs/VALIDATION.md) before tagging a release.
 
 ## Controls and automation
 
