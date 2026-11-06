@@ -26,5 +26,15 @@
     <true/>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>SUEnableAutomaticChecks</key>
+    <false/>
+    <key>SUAllowsAutomaticUpdates</key>
+    <false/>
+    <key>SUAutomaticallyUpdate</key>
+    <false/>
+    <key>SUVerifyUpdateBeforeExtraction</key>
+    <true/>
+    <key>SURequireSignedFeed</key>
+    <true/>
 </dict>
 </plist>

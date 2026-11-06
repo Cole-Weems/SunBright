@@ -12,12 +12,16 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - name: Test activation, preferences, and login items
+      - name: Test activation, preferences, login items, and update controls
         run: swift test
+      - name: Test updater configuration tools
+        run: python3 -m unittest discover -s Tests/ReleaseToolsTests
       - name: Build and verify the app bundle
         run: |
           bash scripts/build-app.sh --apple-silicon
           bash scripts/package-app.sh
+      - name: Test signed update generation and tamper rejection
+        run: bash scripts/test-update-feed.sh
       - uses: actions/upload-artifact@v4
         with:
           name: SunBright-macOS
