@@ -93,7 +93,8 @@ final class AppModel: ObservableObject {
             model.refresh()
         }
         observe(.default, NSApplication.didChangeScreenParametersNotification) { model, _ in
-            model.renderer.stop()
+            // Reconcile displays in place; removing all surfaces here drops EDR
+            // even when the same display is still present.
             model.renderingError = nil
             model.refresh()
         }

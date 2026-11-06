@@ -59,6 +59,7 @@ final class OverlayRenderer {
                 if overlays[id] == nil {
                     overlays[id] = try DisplayOverlay(screen: screen)
                 }
+                overlays[id]?.update(screen: screen)
                 status.effectiveMultiplier = try overlays[id]?.render(requestedMultiplier: multiplier) ?? 1
                 return status
             }
@@ -128,7 +129,9 @@ private final class OverlayPanel: NSPanel {
         animationBehavior = .none
         sharingType = .none
         level = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue - (trigger ? 2 : 1))
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
+        // Treat both surfaces as system overlays, rather than auxiliary windows
+        // belonging to a particular full-screen app during a Space swipe.
+        collectionBehavior = [.canJoinAllSpaces, .canJoinAllApplications, .stationary, .ignoresCycle]
         let view = NSView(frame: NSRect(origin: .zero, size: frame.size))
         view.wantsLayer = true
         view.layer = surface.layer
@@ -143,7 +146,7 @@ private final class OverlayPanel: NSPanel {
 
 @MainActor
 private final class DisplayOverlay {
-    private let screen: NSScreen
+    private var screen: NSScreen
     private let triggerSurface: MetalSurface
     private let boostSurface: MetalSurface
     private let trigger: OverlayPanel
@@ -172,6 +175,20 @@ private final class DisplayOverlay {
         self.boost = boost
         trigger.orderFrontRegardless()
         boost.orderFrontRegardless()
+    }
+
+    func update(screen: NSScreen) {
+        // NSScreen instances and geometry can change without the display going
+        // away. Keep the EDR trigger and multiply surfaces alive across refreshes.
+        self.screen = screen
+        let scale = screen.backingScaleFactor
+        let pixel = 1 / scale
+        let triggerFrame = NSRect(x: screen.frame.minX, y: screen.frame.maxY - pixel,
+                                  width: pixel, height: pixel)
+        if trigger.frame != triggerFrame { trigger.setFrame(triggerFrame, display: false) }
+        if boost.frame != screen.frame { boost.setFrame(screen.frame, display: false) }
+        triggerSurface.layer.contentsScale = scale
+        boostSurface.layer.contentsScale = scale
     }
 
     func render(requestedMultiplier: Double) throws -> Double {
