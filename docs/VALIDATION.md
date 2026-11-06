@@ -58,3 +58,22 @@ The portable suite now includes ten additional tests for nits conversion/clampin
 - [ ] Download the packaged ZIP on an Apple Silicon Mac; confirm the executable contains only the arm64 architecture. Verify extraction retains executable permissions and the app launches after the user’s per-app approval if allowed by macOS policy.
 - [ ] Quit and replace an older app with the updated build; confirm the version and preserved preferences.
 - [ ] Review the draft release’s ZIP, checksum, notes, and intended audience before publishing. A private repository’s releases remain restricted.
+
+## Issue 9: brightness during full-screen swipes
+
+The overlay windows now use `canJoinAllApplications`, `canJoinAllSpaces`, and
+`stationary`, and screen-parameter updates retain the surfaces of connected
+displays. These changes have not yet been built or verified on macOS. The Linux
+workspace used for this change has no Swift compiler, and Docker socket access
+is denied; the earlier validation results above do not validate this fix.
+
+Run `swift test` and `bash scripts/build-app.sh --apple-silicon` on macOS before
+performing these checks. Record Mac model, macOS version, display model,
+connection, display mode, and whether Stage Manager is enabled.
+
+- [ ] Choose On, a target above the SDR reference, and disable media-app pause (or use apps outside its list). Open two apps in separate full-screen Spaces. Confirm brightness remains boosted throughout repeated three-finger swipes in both directions.
+- [ ] Swipe slowly, hold between Spaces, and cancel the swipe. Confirm the effect covers the display throughout, with no dim interval, white flash, or exposed overlay edges.
+- [ ] Repeat between a desktop and a full-screen app and through Mission Control, with Stage Manager both off and on where applicable.
+- [ ] While boosted, change resolution/scaling and rearrange or disconnect/reconnect an external display. Confirm surfaces fit the current display frames and disconnected displays leave no windows behind.
+- [ ] Repeat in Auto with both foreground apps matching. Then use a nonmatching app outside the schedule and confirm boosting stops as intended. A rule-driven disable is expected, unlike the interruption in On mode.
+- [ ] Confirm Off, HDR pause, sleep, and quit still remove the effect, including immediately after a canceled swipe. Restore any media-app pause preferences changed for this check.

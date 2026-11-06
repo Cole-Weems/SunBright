@@ -186,6 +186,8 @@ Each supported display gets a one-pixel EDR trigger and a full-screen multiply-c
 
 The implementation follows the documented [Metal EDR configuration](https://developer.apple.com/documentation/metal/performing-your-own-tone-mapping) and the publicly described [EDR plus multiply-overlay technique](https://yogeshvar.github.io/maxnits.html). It is an independent implementation with no third-party runtime dependencies. No screen capture is performed.
 
+Both overlay windows use Apple's [system-overlay collection behavior](https://developer.apple.com/documentation/appkit/nswindow/collectionbehavior-swift.struct/canjoinallapplications) with all-Spaces and stationary behavior. Screen configuration updates reuse surfaces for displays that remain connected, updating their position and scale without releasing the EDR trigger. This addresses the brightness interruption reported during full-screen swipes in [issue 9](https://github.com/Cole-Weems/SunBright/issues/9); continuity during the gesture still needs verification on a Mac.
+
 ## Current limitations
 
 - GitHub Actions verifies the native macOS build, the core tests, release packaging, and the local app signature on a `macos-15` runner. Physical HDR display behavior remains unverified.
