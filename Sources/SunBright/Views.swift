@@ -199,6 +199,7 @@ struct SettingsView: View {
             } footer: {
                 Text("SunBright starts off each time you launch it. Your brightness and automation preferences are saved.")
             }
+            LoginItemSection(model: model.loginItem)
             Section("Keyboard shortcut") {
                 LabeledContent("Toggle brightness boost", value: "⌥⌘B")
                 Text(model.shortcutAvailable
@@ -363,5 +364,35 @@ struct SettingsView: View {
             if start { model.settings.schedule.startMinute = minute }
             else { model.settings.schedule.endMinute = minute }
         }
+    }
+}
+
+@MainActor
+private struct LoginItemSection: View {
+    @ObservedObject var model: LoginItemModel
+
+    var body: some View {
+        Section("Startup") {
+            Toggle("Launch at Login", isOn: Binding(
+                get: { model.isEnabled },
+                set: { enabled in Task { await model.setEnabled(enabled) } }
+            ))
+            .disabled(!model.isAvailable || model.isUpdating)
+            Text(model.statusMessage)
+                .font(.caption).foregroundStyle(.secondary)
+            if let error = model.errorMessage {
+                Text(error).font(.caption).foregroundStyle(.orange)
+            }
+            if model.status == .requiresApproval || model.status == .notFound || model.errorMessage != nil {
+                Button("Open Login Items Settings", action: model.openSystemSettings)
+                if model.status == .requiresApproval {
+                    Button("Cancel Login Request") {
+                        Task { await model.setEnabled(false) }
+                    }
+                    .disabled(model.isUpdating)
+                }
+            }
+        }
+        .onAppear { model.refresh() }
     }
 }

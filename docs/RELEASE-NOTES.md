@@ -3,6 +3,7 @@ SunBright is an experimental macOS 13+ menu bar utility for Apple Silicon Macs.
 - Estimated brightness targets in nits, with a selectable SDR reference.
 - Manual HDR pause and configurable automatic pause while selected media apps run.
 - App rules, daily schedules, and a global Option–Command–B toggle.
+- Optional Launch at Login in General settings, with macOS registration status, approval guidance, and error recovery. Login launch starts in the menu bar with brightness boost Off; saved rules and targets are retained.
 
 Download the **SunBright versioned ZIP** under Assets, extract it, and move SunBright.app to Applications. This download supports Apple Silicon (M-series) Macs only; it does not run on Intel Macs. Do not download GitHub's automatically generated Source code archive unless you intend to compile it.
 
