@@ -15,6 +15,7 @@ This is the first, experimental iteration. It uses temporary, click-through Meta
 - An optional power adapter requirement.
 - Saved preferences, per-display status, and cleanup on sleep, session changes, display disconnection, and quit.
 - Optional **Launch at Login**, managed through macOS’s login-item registration.
+- **Check for Updates** in Settings, with verified downloads, installation, and relaunch.
 
 SunBright starts **off** on every launch. Your brightness, app rules, and schedule are saved; activation is never saved.
 

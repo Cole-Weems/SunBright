@@ -59,6 +59,19 @@ The portable suite now includes ten additional tests for nits conversion/clampin
 - [ ] Quit and replace an older app with the updated build; confirm the version and preserved preferences.
 - [ ] Complete hardware checks and review release notes before pushing a version tag; matching tags now publish automatically. Check the published ZIP, checksum, and generated change notes, and confirm a retry updates the same tag’s downloads. A private repository’s releases remain restricted.
 
+## In-app updates
+
+The Settings update control uses Sparkle 2.10.1. macOS unit tests use a fake updater to check manual-only requests, availability during an update, disabled/unbundled configuration, startup failures, and turning boost Off without changing saved preferences before installation. Python tests validate build-time feed and public-key configuration. The macOS CI job generates a real signed feed with an ephemeral test key and rejects an archive after its bytes are changed. These checks do not replace an installation test between two released app versions.
+
+Before the first update-enabled release, complete the [publishing setup](guides/RELEASING.md#one-time-updater-setup), then test two builds with the same bundle identifier, feed URL, and public key and increasing build numbers:
+
+- [ ] Install the older build in Applications. Open Settings → General and press Check for Updates; confirm the newer version and its release notes appear. Confirm launching the app alone causes no update check or update-permission prompt.
+- [ ] Cancel the dialog and a download. Confirm the app remains usable and preferences and boost mode are unchanged.
+- [ ] Accept an update while boosting. Confirm the overlays disappear before installation, the app relaunches once, the displayed version changes, and brightness starts Off with saved rules, schedule, targets, and login registration retained.
+- [ ] Check again at the newest version and confirm the up-to-date message. Test offline and unavailable-feed errors and retry after restoring connectivity.
+- [ ] Confirm the download and appcast are accessible without GitHub authentication. Check that only compiled artifacts and reviewed notes are in the public download repository.
+- [ ] Test macOS authorization for replacing the app in Applications, a read-only installation location, and first-launch approval with the actual signing method. Record Mac model, macOS version, installation path, and signing method.
+
 ## Launch at Login
 
 `SunBrightTests` runs on macOS with an injected service; it never changes the runner’s login items. It covers default registration, enable/disable, repeated and concurrent requests, approval cancellation, errors/retry, unbundled execution, missing-item recovery, external changes, and startup remaining Off with saved rules and each login status. Native compilation and these tests require the macOS CI job; Linux runs only the portable core suite.

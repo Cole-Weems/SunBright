@@ -39,7 +39,7 @@ cp "$sparkle_artifacts/LICENSE" "$app_dir/Contents/Resources/Sparkle-LICENSE.txt
 # Local builds use an ad hoc signature. Set SUNBRIGHT_SIGNING_IDENTITY to a
 # Developer ID Application identity for a distributable build; notarize separately.
 signing_identity="${SUNBRIGHT_SIGNING_IDENTITY:--}"
-signing_options=()
+signing_options=(--force --preserve-metadata=entitlements --sign "$signing_identity")
 # Ad hoc builds cannot use library validation with a third-party framework.
 # Developer ID builds retain the hardened runtime and sign all nested code.
 if [[ "$signing_identity" != "-" ]]; then signing_options+=(--options runtime); fi
@@ -50,7 +50,7 @@ for component in \
     "$framework/Versions/B/Updater.app" \
     "$framework" \
     "$app_dir"; do
-    codesign --force "${signing_options[@]}" --preserve-metadata=entitlements --sign "$signing_identity" "$component"
+    codesign "${signing_options[@]}" "$component"
 done
 codesign --verify --deep --strict "$app_dir"
 if [[ "${1:-}" == "--apple-silicon" ]]; then

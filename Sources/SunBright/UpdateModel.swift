@@ -17,7 +17,8 @@ struct UpdateConfiguration {
         if bundleURL.pathExtension != "app" {
             unavailableReason = "In-app updates require SunBright.app. Move the app to Applications and open that copy."
         } else if let feedURL, let url = URL(string: feedURL),
-                  url.scheme == "https", url.host != nil, url.user == nil, url.password == nil,
+                  url.scheme == "https", let host = url.host, !host.isEmpty,
+                  url.user == nil, url.password == nil, url.fragment == nil,
                   let publicKey, Data(base64Encoded: publicKey)?.count == 32 {
             unavailableReason = nil
         } else {

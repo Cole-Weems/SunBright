@@ -21,6 +21,9 @@ jobs:
   release:
     runs-on: macos-15
     timeout-minutes: 30
+    env:
+      UPDATE_REPOSITORY: ${{ vars.SUNBRIGHT_UPDATE_REPOSITORY || github.repository }}
+      SUNBRIGHT_SPARKLE_PUBLIC_KEY: ${{ vars.SUNBRIGHT_SPARKLE_PUBLIC_KEY }}
     permissions:
       contents: write
     steps:
@@ -51,12 +54,49 @@ jobs:
             exit 1
           fi
           echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+      - name: Validate signed update publishing configuration
+        env:
+          GH_TOKEN: ${{ secrets.SUNBRIGHT_UPDATE_TOKEN || github.token }}
+          UPDATE_TOKEN: ${{ secrets.SUNBRIGHT_UPDATE_TOKEN }}
+          SUNBRIGHT_SPARKLE_PRIVATE_KEY: ${{ secrets.SUNBRIGHT_SPARKLE_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          if [[ ! "$UPDATE_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+            echo "SUNBRIGHT_UPDATE_REPOSITORY must be an owner/repository name." >&2
+            exit 1
+          fi
+          if [[ -z "$SUNBRIGHT_SPARKLE_PUBLIC_KEY" || -z "$SUNBRIGHT_SPARKLE_PRIVATE_KEY" ]]; then
+            echo "Configure the Sparkle public-key variable and private-key secret; see docs/guides/RELEASING.md." >&2
+            exit 1
+          fi
+          visibility=$(gh repo view "$UPDATE_REPOSITORY" --json visibility --jq .visibility)
+          if [[ "$visibility" != "PUBLIC" ]]; then
+            echo "Update downloads must be publicly readable. Set SUNBRIGHT_UPDATE_REPOSITORY to a public download-only repository; the source can remain private." >&2
+            exit 1
+          fi
+          if [[ "$UPDATE_REPOSITORY" != "$GITHUB_REPOSITORY" && -z "$UPDATE_TOKEN" ]]; then
+            echo "Set SUNBRIGHT_UPDATE_TOKEN with Contents write access to the download repository." >&2
+            exit 1
+          fi
+          echo "SUNBRIGHT_UPDATE_FEED_URL=https://github.com/$UPDATE_REPOSITORY/releases/latest/download/appcast.xml" >> "$GITHUB_ENV"
+        # A separate public repository needs its own publishing credential.
+        # No GitHub credential is ever embedded in the app or update feed.
       - name: Test core and compile macOS sources
         run: swift test
       - name: Build and package for Apple Silicon
+        env:
+          SUNBRIGHT_REQUIRE_UPDATES: '1'
         run: |
           bash scripts/build-app.sh --apple-silicon
           bash scripts/package-app.sh
+      - name: Generate and verify signed update feed
+        env:
+          SUNBRIGHT_SPARKLE_PRIVATE_KEY: ${{ secrets.SUNBRIGHT_SPARKLE_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          bash scripts/create-update-feed.sh dist/SunBright.app \
+            "dist/SunBright-$APP_VERSION-apple-silicon.zip" dist/updates \
+            "https://github.com/$UPDATE_REPOSITORY/releases/download/$RELEASE_TAG"
       - uses: actions/upload-artifact@v4
         with:
           name: SunBright-release
@@ -64,30 +104,17 @@ jobs:
           path: |
             dist/SunBright-*.zip
             dist/SunBright-*.zip.sha256
+            dist/updates/appcast.xml
       - name: Publish release and upload downloads
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          assets=(
-            "dist/SunBright-$APP_VERSION-apple-silicon.zip"
-            "dist/SunBright-$APP_VERSION-apple-silicon.zip.sha256"
-          )
-          if is_draft=$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft); then
-            # Retrying a tag repairs its downloads without replacing edited notes.
-            gh release upload "$RELEASE_TAG" "${assets[@]}" \
-              --repo "$GITHUB_REPOSITORY" --clobber
-          else
-            # Keep a new release private until both downloads have been uploaded.
-            gh release create "$RELEASE_TAG" "${assets[@]}" \
-              --repo "$GITHUB_REPOSITORY" \
-              --verify-tag \
-              --draft \
-              --title "SunBright $APP_VERSION" \
-              --notes-file docs/RELEASE-NOTES.md \
-              --generate-notes
-            is_draft=true
-          fi
-          if [[ "$is_draft" == "true" ]]; then
-            gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --verify-tag
-          fi
+          bash scripts/publish-release.sh "$GITHUB_REPOSITORY" "$RELEASE_TAG" "$APP_VERSION"
+      - name: Publish public update downloads
+        if: env.UPDATE_REPOSITORY != github.repository
+        env:
+          GH_TOKEN: ${{ secrets.SUNBRIGHT_UPDATE_TOKEN }}
+        shell: bash
+        run: |
+          bash scripts/publish-release.sh "$UPDATE_REPOSITORY" "$RELEASE_TAG" "$APP_VERSION"
