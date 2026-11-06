@@ -14,6 +14,7 @@ This is the first, experimental iteration. It uses temporary, click-through Meta
 - A daily schedule, including windows that cross midnight.
 - An optional power adapter requirement.
 - Saved preferences, per-display status, and cleanup on sleep, session changes, display disconnection, and quit.
+- Optional **Launch at Login**, managed through macOS’s login-item registration.
 
 SunBright starts **off** on every launch. Your brightness, app rules, and schedule are saved; activation is never saved.
 
@@ -154,6 +155,20 @@ Review the draft’s assets and notes and test the downloaded app before publish
 
 ## Controls and automation
 
+### Launch at Login
+
+To start SunBright when you sign in, open **Settings → General** and enable **Launch at Login**. It is off by default; SunBright never registers itself just because you launch it. Use an installed `SunBright.app` in **Applications**. The setting is unavailable when running the bare executable with `swift run`.
+
+SunBright uses macOS 13’s supported `SMAppService.mainApp` API, without a helper app, custom LaunchAgent, or additional privacy permission. macOS owns the registration, so it survives app restarts. The toggle is on only when macOS reports the item enabled. If approval is required, the status explains that login launch is pending; choose **Open Login Items Settings** and allow SunBright, or **Cancel Login Request** to remove the pending request. Registration errors appear beside the setting with recovery instructions.
+
+You can also manage SunBright in **System Settings → General → Login Items** (called **Login Items & Extensions** on some macOS versions). SunBright refreshes the displayed status while running and when you return to its settings. Disabling it in System Settings is respected; SunBright does not automatically register again.
+
+Login launch opens only the menu bar utility and does not open Settings or take focus. As with every launch, brightness boost starts **Off**. Saved nits targets, app rules, and schedules remain available, but select **On** or **Auto** yourself to activate them. Quitting removes the current boost; it does not disable future login launch. Turn off **Launch at Login** to stop that.
+
+Keep one installed copy. Before moving or deleting SunBright, disable Launch at Login, quit, and then move/delete the app. After moving, open the new copy and enable the setting again. For updates, quit and replace the app at the same Applications path, reopen it, and check the reported status. If macOS reports a missing item or requests approval again, follow the status instructions and check Login Items for an old copy. SunBright manages only its own main-app registration; it does not delete other login items. Sign-in behavior, moves, and updates still require the [macOS validation checks](docs/VALIDATION.md#launch-at-login).
+
+### Brightness controls
+
 | Control | Behavior |
 | --- | --- |
 | Off | Removes all overlays and pauses automation. |
@@ -194,7 +209,7 @@ Both overlay windows use Apple's [system-overlay collection behavior](https://de
 - Brightness depends on available HDR headroom, system brightness, display mode, and macOS’s thermal and power management. The slider is an estimated nits target, not a measured or guaranteed luminance.
 - The single trigger pixel may be visible on displays without rounded corners. Multiply compositing, protected video, screen sharing, Mission Control, full-screen Spaces, and mixed-display setups need hardware checks before release.
 - The shortcut is fixed in this iteration. SunBright reports a registration conflict and keeps menu controls available.
-- Login launch, configurable shortcuts, per-display selection, a notarized release, and an automatic updater are future work.
+- Configurable shortcuts, per-display selection, a notarized release, and an automatic updater are future work.
 
 ## Development and validation
 
@@ -204,5 +219,7 @@ bash scripts/build-app.sh  # macOS only
 ```
 
 `SunBrightCore` contains the portable activation, scheduling, and preference model. `SunBright` contains the AppKit/SwiftUI interface, global hot key, power/session integration, and Metal renderer. On Linux, the package exposes only the core and its tests.
+
+On macOS, `swift test` also runs `SunBrightTests`, which uses a fake login-item service to check registration transitions, approval, failures, external status changes, repeated/concurrent requests, and startup with saved rules. These tests do not register real login items or validate sign-in behavior.
 
 GitHub Actions tests the core on Linux and tests/builds/packages the app on macOS. For the remaining physical-display checks, see [the validation checklist](docs/VALIDATION.md).
