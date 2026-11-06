@@ -6,6 +6,12 @@ import SwiftUI
 @MainActor
 struct SunBrightApp {
     static func main() {
+        // Launch Services normally reuses a running app. Also guard direct
+        // executable launches before creating a model, shortcut, or overlays.
+        if let identifier = Bundle.main.bundleIdentifier,
+           NSRunningApplication.runningApplications(withBundleIdentifier: identifier).contains(where: {
+               !$0.isTerminated && $0.processIdentifier < ProcessInfo.processInfo.processIdentifier
+           }) { return }
         let application = NSApplication.shared
         let delegate = AppDelegate()
         application.delegate = delegate
@@ -44,6 +50,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.stop()
     }
 
+    func applicationDidBecomeActive(_ notification: Notification) {
+        model.loginItem.refresh()
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
     @objc private func togglePopover() {
@@ -56,6 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showSettings() {
+        model.loginItem.refresh()
         popover.performClose(nil)
         if settingsWindow == nil {
             let window = NSWindow(

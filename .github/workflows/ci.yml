@@ -12,7 +12,7 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - name: Test activation and preferences
+      - name: Test activation, preferences, and login items
         run: swift test
       - name: Build and verify the app bundle
         run: |

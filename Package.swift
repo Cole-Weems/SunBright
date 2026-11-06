@@ -12,6 +12,7 @@ var targets: [Target] = [
 #if os(macOS)
 products.append(.executable(name: "SunBright", targets: ["SunBright"]))
 targets.append(.executableTarget(name: "SunBright", dependencies: ["SunBrightCore"]))
+targets.append(.testTarget(name: "SunBrightTests", dependencies: ["SunBright"]))
 #endif
 
 let package = Package(

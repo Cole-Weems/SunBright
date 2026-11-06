@@ -59,6 +59,23 @@ The portable suite now includes ten additional tests for nits conversion/clampin
 - [ ] Quit and replace an older app with the updated build; confirm the version and preserved preferences.
 - [ ] Review the draft release’s ZIP, checksum, notes, and intended audience before publishing. A private repository’s releases remain restricted.
 
+## Launch at Login
+
+`SunBrightTests` runs on macOS with an injected service; it never changes the runner’s login items. It covers default registration, enable/disable, repeated and concurrent requests, approval cancellation, errors/retry, unbundled execution, missing-item recovery, external changes, and startup remaining Off with saved rules and each login status. Native compilation and these tests require the macOS CI job; Linux runs only the portable core suite.
+
+The following integration checks remain unperformed. Record the macOS version, Mac model, installation path, signing method (ad hoc or Developer ID), and results. Test macOS 13 and a current supported version where available. Use an app bundle in Applications rather than `swift run`.
+
+- [ ] With a fresh user/profile, launch SunBright. Confirm Launch at Login is off, only the menu bar sun appears, and brightness stays unchanged. Launching the app does not add it to Login Items.
+- [ ] Enable Launch at Login. Compare the displayed status with System Settings → General → Login Items (or Login Items & Extensions). If approval is required, the toggle stays off, the status says approval required, and Open Login Items Settings leads to the relevant pane. Approve it and confirm the toggle updates without relaunching.
+- [ ] Cancel a pending request and confirm the registration is removed. Test registration/unregistration errors where reproducible; the actual status must remain visible alongside actionable recovery text and allow retry.
+- [ ] Quit and reopen. Confirm registration persists and no new registration request or approval is issued just by starting the app.
+- [ ] Sign out and back in with the item enabled. Confirm exactly one SunBright process, no settings/popover window, no focus change, and mode Off with no overlays. Repeat after quitting in On and Auto modes with matching saved app/schedule rules; retain all preferences without restoring activation.
+- [ ] Turn Launch at Login off, quit, and sign out/in. Confirm SunBright does not start. Repeat after disabling it externally through System Settings; the running app must reflect the change and must not undo it on refresh or restart.
+- [ ] With SunBright already running, open its app bundle again, then run its `Contents/MacOS/SunBright` executable directly. Confirm only one menu bar item/process remains and existing mode/rules are unaffected.
+- [ ] Disable login launch, quit, move the app, open the new copy, and enable it. After sign-in, verify only the new copy runs. Quit and replace that copy with an updated build at the same path; check status and sign-in again. Check for stale old paths in Login Items, especially with ad hoc signatures.
+- [ ] Run with `swift run SunBright`. Confirm the control explains that an installed app bundle is required and does not attempt registration.
+- [ ] Enable boost after a login launch; verify Off, normal quit, sleep/wake, and HDR/media pauses still remove and restore overlays according to the existing rules.
+
 ## Issue 9: brightness during full-screen swipes
 
 The overlay windows now use `canJoinAllApplications`, `canJoinAllSpaces`, and

@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 
 @MainActor
 final class AppModel: ObservableObject {
+    let loginItem: LoginItemModel
     @Published var settings: SunBrightSettings {
         didSet {
             do {
@@ -52,10 +53,10 @@ final class AppModel: ObservableObject {
         return reason.description
     }
 
-    init() {
-        let store = PreferencesStore()
+    init(store: PreferencesStore = PreferencesStore(), loginItem: LoginItemModel? = nil) {
         let loaded = store.load()
         self.store = store
+        self.loginItem = loginItem ?? LoginItemModel()
         settings = loaded.settings
         preferencesWarning = loaded.warning
     }
@@ -171,6 +172,7 @@ final class AppModel: ObservableObject {
     }
 
     private func refresh() {
+        loginItem.refresh()
         let components = Calendar.current.dateComponents([.hour, .minute], from: Date())
         let context = ActivationContext(
             hasHDRDisplay: NSScreen.screens.contains(where: \.supportsBrightnessBoost),
