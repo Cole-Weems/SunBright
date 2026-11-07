@@ -72,6 +72,12 @@ final class AppModel: ObservableObject {
             model.updateFrontmostApp(notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)
             model.refresh()
         }
+        observe(workspace, NSWorkspace.activeSpaceDidChangeNotification) { model, _ in
+            // Refresh the existing overlays' order when WindowServer finishes
+            // switching Spaces. Their levels request ordering above the gesture's
+            // transition; this notification must not recreate the surfaces.
+            model.refresh()
+        }
         observe(workspace, NSWorkspace.willSleepNotification) { model, _ in
             model.systemSleeping = true
             model.refresh()
