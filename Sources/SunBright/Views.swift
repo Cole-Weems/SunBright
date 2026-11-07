@@ -157,7 +157,8 @@ struct SettingsView: View {
                 SunBadge(size: 48)
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Your display, a little brighter.").font(.title2.weight(.semibold))
-                    Text("SunBright 0.2 · Nits and HDR pause").font(.callout).foregroundStyle(.secondary)
+                    Text("SunBright \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Development")")
+                        .font(.callout).foregroundStyle(.secondary)
                 }
                 Spacer()
             }.padding(24)
@@ -200,6 +201,7 @@ struct SettingsView: View {
                 Text("SunBright starts off each time you launch it. Your brightness and automation preferences are saved.")
             }
             LoginItemSection(model: model.loginItem)
+            UpdateSection(model: model.updates)
             Section("Keyboard shortcut") {
                 LabeledContent("Toggle brightness boost", value: "⌥⌘B")
                 Text(model.shortcutAvailable
@@ -363,6 +365,28 @@ struct SettingsView: View {
             let minute = (components.hour ?? 0) * 60 + (components.minute ?? 0)
             if start { model.settings.schedule.startMinute = minute }
             else { model.settings.schedule.endMinute = minute }
+        }
+    }
+}
+
+@MainActor
+private struct UpdateSection: View {
+    @ObservedObject var model: UpdateModel
+
+    var body: some View {
+        Section("Updates") {
+            Button("Check for Updates…", action: model.checkForUpdates)
+                .disabled(!model.canCheckForUpdates)
+            if let reason = model.configuration.unavailableReason {
+                Text(reason).font(.caption).foregroundStyle(.secondary)
+            } else {
+                Text("Checks only when you click. Installing an update briefly relaunches SunBright. Your preferences are kept and brightness starts Off.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            if let error = model.errorMessage {
+                Text(error).font(.caption).foregroundStyle(.orange)
+            }
+            Link("GitHub Releases", destination: URL(string: "https://github.com/Cole-Weems/SunBright/releases")!)
         }
     }
 }

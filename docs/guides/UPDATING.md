@@ -6,7 +6,17 @@ Use the instructions for how you installed SunBright. For first-time setup, see 
 
 ## Update a downloaded copy
 
-Quit SunBright using the power button in its menu. Download the new versioned ZIP, extract it, replace the old copy in Applications, and reopen it. Preferences are retained, but mode starts Off. Replacing the file without quitting does not update the running process. There is no automatic in-app updater yet.
+Open **Settings → General → Updates → Check for Updates…**. SunBright shows the available release and its notes, or tells you that you are up to date. Choose to download and install the update in the update window. Installation briefly quits and relaunches SunBright; the boost turns Off before installation, and your saved brightness, app rules, schedule, and other preferences are retained. macOS may request permission to replace an app in Applications.
+
+Checks happen only when you press the button. There are no scheduled checks, silent downloads, or silent installations. You can cancel an update and keep using your current version. Download and verification failures leave the installed app in place and are reported in the update window.
+
+In-app updating requires an installed app built with the project's update feed and public signing key. Unconfigured builds and `swift run` show why updating is unavailable. The release maintainer must complete the [one-time update publishing setup](RELEASING.md#one-time-updater-setup) before shipping an update-enabled app.
+
+### First update-enabled version and manual updates
+
+Older versions, including the original 0.2.0 release, do not contain the updater. Install the first update-enabled version manually once. You can also use this process whenever in-app updating is unavailable:
+
+Quit SunBright using the power button in its menu. Download the new versioned ZIP from the maintainer's GitHub Releases, extract it, replace the old copy in Applications, and reopen it. Preferences are retained, but mode starts Off. Replacing the file without quitting does not update the running process.
 
 ## Update a source build for testing
 

@@ -43,6 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async { self?.updateStatusItem() }
         }
         model.start()
+        model.updates.start()
         updateStatusItem()
     }
 

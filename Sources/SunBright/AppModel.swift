@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 @MainActor
 final class AppModel: ObservableObject {
     let loginItem: LoginItemModel
+    let updates: UpdateModel
     @Published var settings: SunBrightSettings {
         didSet {
             do {
@@ -53,12 +54,14 @@ final class AppModel: ObservableObject {
         return reason.description
     }
 
-    init(store: PreferencesStore = PreferencesStore(), loginItem: LoginItemModel? = nil) {
+    init(store: PreferencesStore = PreferencesStore(), loginItem: LoginItemModel? = nil, updates: UpdateModel? = nil) {
         let loaded = store.load()
         self.store = store
         self.loginItem = loginItem ?? LoginItemModel()
+        self.updates = updates ?? UpdateModel()
         settings = loaded.settings
         preferencesWarning = loaded.warning
+        self.updates.willInstallUpdate = { [weak self] in self?.mode = .off }
     }
 
     func start() {

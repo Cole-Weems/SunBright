@@ -24,7 +24,7 @@ Swift must report version 5.9 or later. If the tools are missing or Terminal is 
 sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
 ```
 
-Adjust that path if you installed Xcode elsewhere. No Homebrew packages or third-party Swift dependencies are required.
+Adjust that path if you installed Xcode elsewhere. No Homebrew packages are required. macOS builds resolve the pinned Sparkle updater package automatically through Swift Package Manager; the portable Linux core has no third-party dependencies. The app packaging scripts also use Python 3 (`python3 --version`).
 
 ## 2. Clone the repository
 
