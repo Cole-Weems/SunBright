@@ -113,11 +113,13 @@ private enum RenderingError: LocalizedError {
 }
 
 @MainActor
-private final class OverlayPanel: NSPanel {
+final class OverlayPanel: NSPanel {
+    enum Role { case trigger, boost }
+
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
-    init(frame: NSRect, surface: MetalSurface, trigger: Bool = false) {
+    init(frame: NSRect, layer: CALayer, role: Role) {
         super.init(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel],
                    backing: .buffered, defer: false)
         isOpaque = false
@@ -125,16 +127,19 @@ private final class OverlayPanel: NSPanel {
         hasShadow = false
         ignoresMouseEvents = true
         hidesOnDeactivate = false
+        canHide = false
         isReleasedWhenClosed = false
         animationBehavior = .none
         sharingType = .none
-        level = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue - (trigger ? 2 : 1))
-        // Treat both surfaces as system overlays, rather than auxiliary windows
-        // belonging to a particular full-screen app during a Space swipe.
-        collectionBehavior = [.canJoinAllSpaces, .canJoinAllApplications, .stationary, .ignoresCycle]
+        // Joining all Spaces alone does not keep a below-screen-saver window
+        // above the full-screen transition. Keep the multiply surface at the
+        // display-shielding level and its EDR trigger above it, unobscured.
+        level = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()) + (role == .trigger ? 1 : 0))
+        collectionBehavior = [.canJoinAllSpaces, .canJoinAllApplications, .fullScreenAuxiliary,
+                              .stationary, .ignoresCycle]
         let view = NSView(frame: NSRect(origin: .zero, size: frame.size))
         view.wantsLayer = true
-        view.layer = surface.layer
+        view.layer = layer
         contentView = view
     }
 
@@ -168,13 +173,12 @@ private final class DisplayOverlay {
         // reliably request HDR headroom from WindowServer.
         let trigger = OverlayPanel(
             frame: NSRect(x: screen.frame.minX, y: screen.frame.maxY - pixel, width: pixel, height: pixel),
-            surface: triggerSurface, trigger: true
+            layer: triggerSurface.layer, role: .trigger
         )
-        let boost = OverlayPanel(frame: screen.frame, surface: boostSurface)
+        let boost = OverlayPanel(frame: screen.frame, layer: boostSurface.layer, role: .boost)
         self.trigger = trigger
         self.boost = boost
-        trigger.orderFrontRegardless()
-        boost.orderFrontRegardless()
+        orderFront()
     }
 
     func update(screen: NSScreen) {
@@ -189,6 +193,14 @@ private final class DisplayOverlay {
         if boost.frame != screen.frame { boost.setFrame(screen.frame, display: false) }
         triggerSurface.layer.contentsScale = scale
         boostSurface.layer.contentsScale = scale
+        orderFront()
+    }
+
+    private func orderFront() {
+        // Reassert ordering after display/Space changes without ordering out or
+        // replacing either surface, which would release the EDR request.
+        boost.orderFrontRegardless()
+        trigger.orderFrontRegardless()
     }
 
     func render(requestedMultiplier: Double) throws -> Double {
