@@ -13,7 +13,7 @@ bash scripts/build-app.sh --apple-silicon
 bash scripts/package-app.sh
 ```
 
-The packaging script creates `dist/SunBright-0.2.0-apple-silicon.zip` and a SHA-256 checksum alongside it. It preserves executable permissions and app metadata. For optional Developer ID signing, supply `SUNBRIGHT_SIGNING_IDENTITY` when building and notarize separately. Without it, the build is ad hoc signed and unnotarized.
+The packaging script creates `dist/SunBright-<version>-apple-silicon.zip` and a SHA-256 checksum alongside it. It preserves executable permissions and app metadata. For optional Developer ID signing, supply `SUNBRIGHT_SIGNING_IDENTITY` when building and notarize separately. Without it, the build is ad hoc signed and unnotarized.
 
 ## Automatic GitHub Releases
 
@@ -22,6 +22,16 @@ The **Publish GitHub release** workflow automatically tests, builds, and publish
 ### One-time updater setup
 
 Complete this setup before pushing the first tag containing the updater. It needs no Apple developer membership, but it does need a persistent Sparkle signing key and publicly readable downloads. Missing signing or hosting configuration stops the release workflow before publication; it never ships an updater that accepts unsigned downloads.
+
+SunBright's repository is now public, so it can host its own update downloads. From an up-to-date checkout on your Mac, with Xcode, Python 3, and the [GitHub CLI](https://cli.github.com/) installed, authenticate the CLI (`gh auth login`) with an account that can manage this repository, then run:
+
+```sh
+bash scripts/setup-updates.sh --publish
+```
+
+The helper creates or reuses a signing key in your login Keychain, transfers it directly into the repository's Actions secret, sets the public configuration, and starts the version on remote `main`. It preserves existing signing secrets and rejects mismatched keys or moved tags. Temporary exported key files are deleted. Keep the Keychain key and a secure backup; do not paste private keys or GitHub tokens into chat. Omit `--publish` to configure keys without starting a release. This script must run with your own GitHub CLI authentication because the Codex GitHub connector does not expose Actions-secret administration.
+
+The manual steps below remain available for custom hosting or key recovery.
 
 The source repository can remain private. Create a separate **public download-only repository**, initialized with a README, and set the source repository's Actions variable `SUNBRIGHT_UPDATE_REPOSITORY` to its `owner/repository` name. Only the compiled ZIP, checksum, signed feed, and reviewed release notes are copied there; source code and private pull request change notes are not copied. Public artifacts will be downloadable by anyone. If the source repository is already public, this variable can be omitted to use its own Releases instead.
 
