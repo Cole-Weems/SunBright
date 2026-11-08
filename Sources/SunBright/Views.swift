@@ -11,7 +11,7 @@ struct MenuBarView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 12) {
-                SunBadge(size: 42)
+                AppIconView(size: 42)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("SunBright").font(.title2.weight(.semibold))
                     Text("A little more daylight.").font(.caption).foregroundStyle(.secondary)
@@ -79,24 +79,6 @@ struct MenuBarView: View {
 }
 
 @MainActor
-private struct SunBadge: View {
-    let size: CGFloat
-
-    var body: some View {
-        Image(systemName: "sun.max.fill")
-            .font(.system(size: size * 0.52, weight: .medium))
-            .foregroundStyle(.white)
-            .frame(width: size, height: size)
-            .background(
-                LinearGradient(colors: [Color(red: 1, green: 0.74, blue: 0.22), .orange],
-                               startPoint: .topLeading, endPoint: .bottomTrailing),
-                in: RoundedRectangle(cornerRadius: size * 0.27)
-            )
-            .accessibilityHidden(true)
-    }
-}
-
-@MainActor
 private struct BrightnessControl: View {
     @Binding var settings: SunBrightSettings
 
@@ -112,9 +94,9 @@ private struct BrightnessControl: View {
             Slider(value: $settings.targetNits, in: settings.targetNitsRange, step: 10) {
                 Text("Estimated brightness target in nits")
             } minimumValueLabel: {
-                Image(systemName: "sun.min")
+                AppIconView(size: 16).opacity(0.45)
             } maximumValueLabel: {
-                Image(systemName: "sun.max.fill")
+                AppIconView(size: 16)
             }
             .accessibilityValue("\(Int(settings.targetNits.rounded())) nits estimated")
             Text("Estimate using a \(Int(settings.sdrReferenceNits)) nit SDR reference. Actual output follows available headroom; 1600 nits is a peak HDR target, not sustained brightness.")
@@ -154,7 +136,7 @@ struct SettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 14) {
-                SunBadge(size: 48)
+                AppIconView(size: 48)
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Your display, a little brighter.").font(.title2.weight(.semibold))
                     Text("SunBright \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Development")")
@@ -164,7 +146,9 @@ struct SettingsView: View {
             }.padding(24)
 
             TabView {
-                general.tabItem { Label("General", systemImage: "sun.max") }
+                general.tabItem {
+                    Label { Text("General") } icon: { AppIconView(size: 16) }
+                }
                 apps.tabItem { Label("App Rules", systemImage: "app.dashed") }
                 hdr.tabItem { Label("HDR Pause", systemImage: "play.rectangle") }
                 schedule.tabItem { Label("Schedule", systemImage: "clock") }

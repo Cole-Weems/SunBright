@@ -88,10 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateStatusItem() {
         guard let button = statusItem?.button else { return }
-        let symbol = model.isBoosting ? "sun.max.fill" : "sun.max"
-        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "SunBright")
-        image?.isTemplate = true
-        button.image = image
+        button.image = AppIcon.statusImage(isBoosting: model.isBoosting)
         button.toolTip = "SunBright · \(model.statusMessage)"
         button.setAccessibilityLabel("SunBright: \(model.statusMessage)")
     }

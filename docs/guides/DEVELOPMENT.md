@@ -12,6 +12,8 @@ To run directly from source during development, use `swift run SunBright` from t
 
 The source artwork is [Resources/AppIcon.png](../../Resources/AppIcon.png), a square PNG at least 1024 pixels wide. The artwork was generated with AI for SunBright. The macOS build script uses the system `sips` and `iconutil` tools to downsample the master into the standard icon sizes and embed `AppIcon.icns` in the app before signing. `CFBundleIconFile` points to that resource. Update the source PNG and rebuild the app bundle to change its icon; no generated iconset or ICNS file needs to be committed. Packaging checks the icon declaration and decodes the icon from the extracted ZIP.
 
+In-app artwork uses the shared `AppIcon` provider, which reads `NSApplication.applicationIconImage` rather than a separate image asset or system sun symbol. Settings, the popover, tab, brightness controls, and menu bar therefore follow the bundled icon on subsequent launches. The menu bar renders a small active indicator without changing the source icon. `AppIconTests` checks that changing the current application icon changes the shared artwork and that rendering the status icon preserves the source. Bare `swift run` executions use the host's application icon; use the built app bundle to preview SunBright's artwork.
+
 ## Validation
 
 ```sh

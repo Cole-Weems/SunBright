@@ -29,6 +29,8 @@ These checks establish native build and packaging compatibility. The physical-di
 
 Run on a Mac with an HDR-capable display and, if available, an SDR external display. Record the macOS version, display model, display mode, and architecture with the results.
 
+- [ ] In the packaged app, compare the Settings header, menu popover, General tab, brightness controls, and menu-bar icon with the Finder app icon. Check light and dark appearances and verify the active dot and tooltip still reflect boost state. Rebuild with changed source artwork and confirm these surfaces follow it after relaunch.
+
 - [ ] Launch the app bundle. Only the menu bar sun appears; mode starts Off and brightness stays unchanged.
 - [ ] Select On with an estimated target above the SDR reference. Confirm SDR content becomes brighter, colors and blacks remain correct, pointer behavior is normal, and the estimated display readouts reflect the available headroom.
 - [ ] Move between the SDR reference and the 1600-nit target. At the reference value, no overlays remain. A display with limited headroom must not exceed its current limit.

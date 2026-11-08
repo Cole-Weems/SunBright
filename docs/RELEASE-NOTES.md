@@ -1,9 +1,10 @@
 SunBright is an experimental macOS 13+ menu bar utility for Apple Silicon Macs.
 
-Changes in **0.2.3**:
+Changes in **0.2.4**:
 
-- Add a custom golden-sun app icon for Finder, Applications, and macOS update dialogs.
-- Include standard and Retina icon sizes in the signed app bundle, with archive validation during packaging.
+- Use the app's actual icon in Settings, the menu popover, the General tab, brightness controls, and the menu bar.
+- Read all artwork from the current application icon, so replacing the bundled icon updates these surfaces together in future releases.
+- Keep a small boost-active indicator on the menu-bar icon, alongside the existing status text and accessibility labels.
 
 Includes the full-screen overlay ordering changes from 0.2.2. Physical swipe continuity still needs verification on supported hardware; issue #9 remains open.
 
