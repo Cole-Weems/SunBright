@@ -8,6 +8,10 @@ First follow [Build and run SunBright](BUILD.md) to install the tools and clone 
 
 To run directly from source during development, use `swift run SunBright` from the repository directory and keep Terminal open; press **Control–C** to stop that process. To work in Xcode, run `open Package.swift` from the same directory.
 
+## App icon
+
+The source artwork is [Resources/AppIcon.png](../../Resources/AppIcon.png), a square PNG at least 1024 pixels wide. The artwork was generated with AI for SunBright. The macOS build script uses the system `sips` and `iconutil` tools to downsample the master into the standard icon sizes and embed `AppIcon.icns` in the app before signing. `CFBundleIconFile` points to that resource. Update the source PNG and rebuild the app bundle to change its icon; no generated iconset or ICNS file needs to be committed. Packaging checks the icon declaration and decodes the icon from the extracted ZIP.
+
 ## Validation
 
 ```sh

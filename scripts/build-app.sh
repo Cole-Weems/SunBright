@@ -20,6 +20,23 @@ if [[ $# -gt 1 ]]; then
     exit 1
 fi
 
+icon_source="$repo_dir/Resources/AppIcon.png"
+if [[ ! -s "$icon_source" ]]; then
+    echo "Missing app icon source: Resources/AppIcon.png" >&2
+    exit 1
+fi
+if ! icon_properties="$(sips -g format -g pixelWidth -g pixelHeight "$icon_source")"; then
+    echo "Resources/AppIcon.png must be a valid square PNG at least 1024 pixels wide." >&2
+    exit 1
+fi
+icon_format="$(awk '/^[[:space:]]+format:/ { print $2 }' <<< "$icon_properties")"
+icon_width="$(awk '/^[[:space:]]+pixelWidth:/ { print $2 }' <<< "$icon_properties")"
+icon_height="$(awk '/^[[:space:]]+pixelHeight:/ { print $2 }' <<< "$icon_properties")"
+if [[ "$icon_format" != "png" || ! "$icon_width" =~ ^[0-9]+$ || "$icon_width" != "$icon_height" ]] || (( icon_width < 1024 )); then
+    echo "Resources/AppIcon.png must be a square PNG at least 1024 pixels wide." >&2
+    exit 1
+fi
+
 swift build "${build_args[@]}" --product SunBright
 binary_dir="$(swift build "${build_args[@]}" --show-bin-path)"
 app_dir="$repo_dir/dist/SunBright.app"
@@ -28,6 +45,20 @@ cp "$binary_dir/SunBright" "$app_dir/Contents/MacOS/SunBright"
 cp "$repo_dir/Resources/Info.plist" "$app_dir/Contents/Info.plist"
 python3 scripts/configure-updates.py "$app_dir/Contents/Info.plist"
 plutil -lint "$app_dir/Contents/Info.plist"
+
+# Generate every standard macOS icon representation before signing the bundle.
+icon_work_dir="$(mktemp -d "${TMPDIR:-/tmp}/sunbright-icon.XXXXXX")"
+trap 'rm -rf "$icon_work_dir"' EXIT
+iconset="$icon_work_dir/AppIcon.iconset"
+mkdir "$iconset"
+for icon_size in 16 32 128 256 512; do
+    sips -z "$icon_size" "$icon_size" "$icon_source" \
+        --out "$iconset/icon_${icon_size}x${icon_size}.png" >/dev/null
+    retina_size=$((icon_size * 2))
+    sips -z "$retina_size" "$retina_size" "$icon_source" \
+        --out "$iconset/icon_${icon_size}x${icon_size}@2x.png" >/dev/null
+done
+iconutil -c icns "$iconset" -o "$app_dir/Contents/Resources/AppIcon.icns"
 
 sparkle_artifacts="$repo_dir/.build/artifacts/sparkle/Sparkle"
 framework="$app_dir/Contents/Frameworks/Sparkle.framework"

@@ -1,10 +1,11 @@
 SunBright is an experimental macOS 13+ menu bar utility for Apple Silicon Macs.
 
-Changes in **0.2.2**:
+Changes in **0.2.3**:
 
-- Raise the brightness overlay to the display-shielding level and keep its HDR trigger above it to address the brightness drop during full-screen Space swipes.
-- Restore full-screen auxiliary behavior and refresh window ordering after Space changes while retaining existing surfaces.
-- Add native regression tests for overlay ordering, full-screen eligibility, and click-through behavior. Physical swipe continuity still needs verification on supported hardware; issue #9 remains open.
+- Add a custom golden-sun app icon for Finder, Applications, and macOS update dialogs.
+- Include standard and Retina icon sizes in the signed app bundle, with archive validation during packaging.
+
+Includes the full-screen overlay ordering changes from 0.2.2. Physical swipe continuity still needs verification on supported hardware; issue #9 remains open.
 
 - Estimated brightness targets in nits, with a selectable SDR reference.
 - Manual HDR pause and configurable automatic pause while selected media apps run.

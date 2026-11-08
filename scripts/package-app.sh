@@ -15,6 +15,11 @@ if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     exit 1
 fi
 codesign --verify --deep --strict "$app_dir"
+icon_name="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' "$app_dir/Contents/Info.plist")"
+if [[ "$icon_name" != "AppIcon" || ! -s "$app_dir/Contents/Resources/$icon_name.icns" ]]; then
+    echo "The app bundle must declare AppIcon and contain Resources/AppIcon.icns." >&2
+    exit 1
+fi
 test -x "$app_dir/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate"
 test -x "$app_dir/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater"
 test -L "$app_dir/Contents/Frameworks/Sparkle.framework/Versions/Current"
@@ -28,6 +33,10 @@ ditto -c -k --sequesterRsrc --keepParent "$app_dir" "$archive"
 verification_dir="$(mktemp -d "${TMPDIR:-/tmp}/sunbright-package.XXXXXX")"
 trap 'rm -rf "$verification_dir"' EXIT
 ditto -x -k "$archive" "$verification_dir"
+test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' "$verification_dir/SunBright.app/Contents/Info.plist")" = "$icon_name"
+# Decode the icon from the actual ZIP to reject missing or invalid icon data.
+iconutil -c iconset "$verification_dir/SunBright.app/Contents/Resources/$icon_name.icns" \
+    -o "$verification_dir/AppIcon.iconset"
 test -x "$verification_dir/SunBright.app/Contents/MacOS/SunBright"
 test -L "$verification_dir/SunBright.app/Contents/Frameworks/Sparkle.framework/Versions/Current"
 codesign --verify --deep --strict "$verification_dir/SunBright.app"
