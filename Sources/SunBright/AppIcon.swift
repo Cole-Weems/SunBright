@@ -9,6 +9,13 @@ enum AppIcon {
         NSApplication.shared.applicationIconImage ?? NSImage(size: NSSize(width: 1, height: 1))
     }
 
+    static var tabImage: NSImage {
+        let result = (image.copy() as? NSImage) ?? NSImage()
+        result.size = NSSize(width: 16, height: 16)
+        result.isTemplate = false
+        return result
+    }
+
     static func statusImage(isBoosting: Bool) -> NSImage {
         let size = NSSize(width: 18, height: 18)
         let result = NSImage(size: size)
@@ -17,7 +24,7 @@ enum AppIcon {
         image.draw(in: NSRect(origin: .zero, size: size), from: .zero,
                    operation: .sourceOver, fraction: 1)
         if isBoosting {
-            let indicator = NSBezierPath(ovalIn: NSRect(x: 13, y: 0, width: 5, height: 5))
+            let indicator = NSBezierPath(ovalIn: NSRect(x: 12.5, y: 0.5, width: 5, height: 5))
             NSColor.systemOrange.setFill()
             indicator.fill()
             NSColor.black.withAlphaComponent(0.6).setStroke()

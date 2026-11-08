@@ -20,7 +20,7 @@ final class AppIconTests: XCTestCase {
     }
 
     @MainActor
-    func testStatusImagesPreserveSourceArtworkAndDistinguishBoostState() throws {
+    func testInterfaceImagesPreserveSourceArtworkAndDistinguishBoostState() throws {
         let application = NSApplication.shared
         let original = application.applicationIconImage
         defer { application.applicationIconImage = original }
@@ -35,6 +35,9 @@ final class AppIconTests: XCTestCase {
 
         let inactive = AppIcon.statusImage(isBoosting: false)
         let active = AppIcon.statusImage(isBoosting: true)
+        let tab = AppIcon.tabImage
+        XCTAssertEqual(tab.size, NSSize(width: 16, height: 16))
+        XCTAssertFalse(tab.isTemplate)
         XCTAssertEqual(inactive.size, NSSize(width: 18, height: 18))
         XCTAssertEqual(active.size, NSSize(width: 18, height: 18))
         XCTAssertFalse(inactive.isTemplate)

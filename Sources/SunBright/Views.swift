@@ -96,7 +96,7 @@ private struct BrightnessControl: View {
             } minimumValueLabel: {
                 AppIconView(size: 16).opacity(0.45)
             } maximumValueLabel: {
-                AppIconView(size: 16)
+                AppIconView(size: 16).opacity(1)
             }
             .accessibilityValue("\(Int(settings.targetNits.rounded())) nits estimated")
             Text("Estimate using a \(Int(settings.sdrReferenceNits)) nit SDR reference. Actual output follows available headroom; 1600 nits is a peak HDR target, not sustained brightness.")
@@ -147,7 +147,9 @@ struct SettingsView: View {
 
             TabView {
                 general.tabItem {
-                    Label { Text("General") } icon: { AppIconView(size: 16) }
+                    Label { Text("General") } icon: {
+                        Image(nsImage: AppIcon.tabImage).renderingMode(.original)
+                    }
                 }
                 apps.tabItem { Label("App Rules", systemImage: "app.dashed") }
                 hdr.tabItem { Label("HDR Pause", systemImage: "play.rectangle") }
